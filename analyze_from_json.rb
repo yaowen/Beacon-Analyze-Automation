@@ -1,14 +1,29 @@
-require './analyze_job'
 require 'json'
-require './goal_numbers_count'
+require './analyze_utils'
+require './analyze_jobs/goal_numbers_count'
+require './analyze_jobs/page_view_count'
+require './analyze_jobs/visit_number_count'
+require './analyze_jobs/watched_view_analyze'
+require './analyze_jobs/os_analyze'
+require './analyze_jobs/video_watch_analyze'
+require './analyze_jobs/signup_funnel_analyze'
+
+input_path = ARGV[0] || "input.json"
+output_dir_path = ARGV[1] || "default.output"
 
 #==> reading from specific files
-lines = IO.readlines("20120531.json")
+lines = IO.readlines(input_path)
 
 #==> analyze job list
 job_queue = [
   #TestAnalyzeJob.new
-  GoalNumberCountAnalyzeJob.new
+  #GoalNumberCountAnalyzeJob.new,
+  #WatchViewCountAnalyzeJob.new,
+  #VisitNumberCountAnalyzeJob.new,
+  #PageViewCountAnalyzeJob.new,
+  #OSAnalyzeJob.new,
+  VideoWatchAnalyzeJob.new,
+  SignupFunnelAnalyzeJob.new
 ]
 
 lines.each do |line|
@@ -20,6 +35,6 @@ lines.each do |line|
 end
 
 job_queue.each do |analyze_job|
-  analyze_job.output_result
+  analyze_job.output_result output_dir_path
 end
 exit

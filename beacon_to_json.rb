@@ -1,8 +1,15 @@
 require 'set'
 require 'json'
 require 'date'
+require './raw_actions/play_action'
+require './raw_actions/page_load_action'
+require './raw_actions/signup_action'
 
 $cmd_params = Hash.new
+
+PLAY_ACTION = "play_action"
+PAGE_LOAD_ACTION = "page_load_action"
+SIGNUP_ACTION = "signup_action"
 
 # ==> Analyze Command Parameter
 ARGV.each do |command_param|
@@ -30,6 +37,7 @@ FIELDS_NUM = 13
 
 # ==> Global Variables
 $sessions = Hash.new    #normally use session to aggregate all the track record
+$visitors = Hash.new
 
 # ==> File Settings
 input_path = $cmd_params["input"] 
@@ -62,64 +70,74 @@ def check_type parts
   return parts.length == FIELDS_NUM ? :with_page_type : :without_page_type 
 end
 
-def time_build parts
-  line_type = check_type(parts)
-  year_idx = 0
-  month_idx = 1
-  day_idx = 2
-
-  year = parseInt(parts[year_idx])
-  month = parseInt(parts[month_idx])
-  day = parseInt(parts[day_idx])
-    
-  timeofday = parts[-2]
-  timeofday_parts = timeofday.split(":")
-  hour = parseInt(timeofday_parts[0])
-  minute = parseInt(timeofday_parts[1])
-  second = parseInt(timeofday_parts[2])
-  complete_time = Time.new(year,month,day,hour,minute,second, "+00:00")
+def add_element_to_hash_set container, key, element
+  if key.nil? or "" == key
+    return
+  end
+  nArray = container[key]
+  if nArray.nil?
+    nArray = Array.new
+    container[key] = nArray
+  end
+  nArray << element;
 end
 
+def generate_action action_type
+  if PLAY_ACTION == action_type
+    return PlayAction.new
+  elsif PAGE_LOAD_ACTION == action_type
+    return PageViewAction.new
+  elsif SIGNUP_ACTION == action_type
+    return SignUpAction.new
+  end
+  return nil
+end
 
-def parse_beacon_file input_path, options = {}
+def generate_action_type_with_mark head_line
+  if (head_line =~ /.*field.*/)
+    puts "signup_action"
+    return SIGNUP_ACTION
+  elsif(head_line =~ /.*pageurl.*/)
+    puts "page_load"
+    return PAGE_LOAD_ACTION
+  elsif (head_line =~ /.*contentid.*/)
+    puts "play_action"
+    return PLAY_ACTION
+  end
+  return nil
+end
+
+def parse_beacon_file input_path, options = {:action_type => "page_load_action"}
   beacon_file = File.open(input_path, 'r')
   flag = false
   inputLineCount ||= 0
   inputLineLimit = $cmd_params["linelimit"] || -1
+  action_type = generate_action_type_with_mark(beacon_file.first)
   beacon_file.each_line do |line|
+    action = generate_action(action_type);
     unless flag
       flag = true
       next
     end
     inputLineCount += 1
-    if( inputLineCount % 10000 == 0 )
-      puts inputLineCount
+    if( inputLineCount % 1000 == 0 )
+      print (inputLineCount.to_s + "\r")
     end
     if(inputLineLimit != -1 && inputLineCount > inputLineLimit)
       break;
     end
-    
-    parts = line.split(/\t+/)
-
-    next if parts.length < 10 #error line
-    pageurl = parts[5]
-    timestamp = time_build parts 
-    sid = parts[4]
-    cid = parts[3]
-
-    nArray = $sessions[sid]
-    if nArray.nil?
-      nArray = Array.new
-      $sessions[sid] = nArray
-    end
-    nArray << {:pageurl => pageurl, :visit_time => timestamp}
+    action.parse_beacon_line(line)
+    add_element_to_hash_set $sessions, action.sid, action.to_hash
+    add_element_to_hash_set $visitors, action.cid , action.to_hash
   end
+  puts
   beacon_file.close
 end
 
 def parse_beacon_files input_dir, options = {}
   traverse_dir(input_dir) do |file|
     if file.to_s =~ /\.tsv$/
+      puts "parsing file #{file.to_s}"
       parse_beacon_file(file.to_s)
     end
   end
@@ -133,13 +151,21 @@ else
 end
     
 # ==> Output the final result into indicated file
-outputFile = File.open(output_path, 'w')
-linecount = 0
-$sessions.each do |key, value|
-  linecount += 1
-  puts linecount if linecount % 10000 == 0
-  outputFile.puts value.to_json
+
+def output_to_json container, filename
+  puts "output_to_file #{filename}"
+  outputFile = File.open(filename, 'w')
+  linecount = 0
+  container.each do |key, value|
+    linecount += 1
+    print(linecount.to_s + "\r") if linecount % 1000 == 0
+    sorted_value = value.sort do |a, b|
+      a[:visit_time] <=> b[:visit_time]
+    end
+    outputFile.puts sorted_value.to_json
+  end
+  outputFile.close
 end
 
-# ==> Closing all the open files
-outputFile.close
+output_to_json($sessions, output_path + "_session")
+output_to_json($visitors, output_path + "_visitors")
