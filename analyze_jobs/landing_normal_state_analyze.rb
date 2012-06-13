@@ -1,14 +1,190 @@
 require './analyze_job'
 
 class LandingNormalState
+
+  class State
+    def eql? another
+      return hash == another.hash
+    end
+  end
+
+  class StateLanding < State
+    def initialize context
+      @context = context
+    end
+
+    def landing_page
+    end
+    
+    def not_sure 
+      @context.set_state(@context.state_not_sure)
+    end
+
+    def signup_start
+      @context.set_state(@context.state_signup_start)
+    end
+
+    def signup_complete
+      @context.set_state(@context.state_signup_complete)
+    end
+
+    def watch_video
+      @context.set_state(@context.state_watch_video)
+    end
+
+    def hash
+      return 0
+    end
+
+    def to_s
+      "landing"
+    end
+
+  end
+
+  class StateSignupStart < State
+    def initialize context
+      @context = context
+    end
+
+    def landing_page
+      @context.set_state(@context.state_not_sure)
+    end
+    
+    def not_sure 
+      @context.set_state(@context.state_not_sure)
+    end
+
+    def signup_start
+    end
+
+    def signup_complete
+      @context.set_state(@context.state_signup_complete)
+    end
+
+    def watch_video
+      @context.set_state(@context.state_watch_video)
+    end
+
+    def hash
+      return 1
+    end
+
+    def to_s
+      "signup_start"
+    end
+
+  end
+
+  class StateNotSure < State
+    def initialize context
+      @context = context
+    end
+
+    def landing_page
+    end
+    
+    def not_sure 
+    end
+
+    def signup_start
+      @context.set_state(@context.state_signup_start)
+    end
+
+    def signup_complete
+      @context.set_state(@context.state_signup_complete)
+    end
+
+    def watch_video
+      @context.set_state(@context.state_watch_video)
+    end
+    
+    def hash
+      return 2
+    end
+
+    def to_s
+      "wants know more"
+    end
+  end
+
+  class StateSignupComplete < State
+    
+    def initialize context
+      @context = context
+    end
+
+    def landing_page
+      @context.set_state(@context.state_not_sure)
+    end
+    
+    def not_sure 
+      @context.set_state(@context.state_not_sure)
+    end
+
+    def signup_start
+      @context.set_state(@context.state_signup_start)
+    end
+
+    def signup_complete
+    end
+
+    def watch_video
+      @context.set_state(@context.state_watch_video)
+    end
+
+    def hash
+      return 3
+    end
+
+    def to_s
+      "signup complete"
+    end
+  end
+
+  class StateWatchVideo < State
+    def initialize context
+      @context = context
+    end
+
+    def landing_page
+      @context.set_state(@context.state_not_sure)
+    end
+    
+    def not_sure 
+      @context.set_state(@context.state_not_sure)
+    end
+
+    def signup_start
+      @context.set_state(@context.state_signup_start)
+    end
+
+    def signup_complete
+      @context.set_state(@context.state_signup_complete)
+    end
+
+    def watch_video
+    end
+
+    def hash
+      return 4
+    end
+
+    def to_s
+      "watch video"
+    end
+  end
+  
   class StateContext
-    LANDING = StateLanding.new(self)
-    SIGNUP_START = StateStartup.new(self)
-    NOT_SURE = StateNotSure.new(self)
-    SIGNUP_COMPLETE = StateSignupComplete.new(self)
-    WATCH_VIDEO = StateWatchVideo.new(self)
+    attr_reader :state_landing, :state_signup_start, :state_not_sure, :state_signup_complete, :state_watch_video
 
     def initialize
+      @state_landing = StateLanding.new(self)
+      @state_signup_start = StateSignupStart.new(self)
+      @state_not_sure = StateNotSure.new(self)
+      @state_signup_complete = StateSignupComplete.new(self)
+      @state_watch_video = StateWatchVideo.new(self)
+
       @state = nil 
       @state_list = []
       @hash_code = 0
@@ -16,14 +192,14 @@ class LandingNormalState
 
     def set_state n_state
       @state = n_state
-      @state_list.add(@state)
+      @state_list << @state
       @hash_code = @hash_code * 4 + @state.hash
     end
 
     def next action
-      if state.nil?
+      if @state.nil?
         if front_porch? action
-          set_state(LANDING)
+          set_state(@state_landing)
           return true
         end
         return false
@@ -32,7 +208,7 @@ class LandingNormalState
         landing
       elsif signup_start? action
         signup_start
-      elsif signup_complete? action
+      elsif conversion? action
         signup_complete
       elsif watch_video? action
         watch_video
@@ -43,23 +219,23 @@ class LandingNormalState
     end
 
     def landing
-      state.land_page
+      @state.landing_page
     end
 
     def signup_start
-      state.signup_start
+      @state.signup_start
     end
 
     def signup_complete
-      state.signup_complete
+      @state.signup_complete
     end
 
     def watch_video
-      state.watch_video
+      @state.watch_video
     end
 
     def not_sure
-      state.not_sure
+      @state.not_sure
     end
 
     def states idx
@@ -67,7 +243,7 @@ class LandingNormalState
     end
 
     def hash
-      return hash_code
+      return @hash_code
     end
 
     def eql? another
@@ -78,154 +254,59 @@ class LandingNormalState
       return true
     end
 
-  end
-
-  class StateLanding
-    def initialize context
-      @context = context
+    def size
+      return @state_list.length
     end
 
-    def landing_page
-    end
-    
-    def not_sure 
-      @context.set_state(StateContext::NOT_SURE)
+    def to_s
+      content = ""
+      flag = true
+
+      if @state_list.length == 0
+        return "not landing pattern"
+      end
+
+      @state_list.each do |state|
+        if flag
+          content += "#{state}"
+          flag = false
+          next
+        end
+        content += "->#{state}"
+      end
+      return content
     end
 
-    def signup_start
-      @context.set_state(StateContext::SIGNUP_START)
-    end
-
-    def signup_complete
-      @context.set_state(StateContext::SIGNUP_COMPLETE)
-    end
-
-    def watch_video
-      @context.set_state(StateContext::WATCH_VIDEO)
-    end
-
-    def hash
-      return 0
-    end
-  end
-
-  class StateSignupStart
-    def initialize context
-      @context = context
-    end
-
-    def landing_page
-      @context.set_state(StateContext::NOT_SURE)
-    end
-    
-    def not_sure 
-      @context.set_state(StateContext::NOT_SURE)
-    end
-
-    def signup_start
-    end
-
-    def signup_complete
-      @context.set_state(StateContext::SIGNUP_COMPLETE)
-    end
-
-    def watch_video
-      @context.set_state(StateContext::WATCH_VIDEO)
-    end
-
-    def hash
-      return 1
-    end
-  end
-
-  class StateSignupNotSure
-    def initialize context
-      @context = context
-    end
-
-    def landing_page
-    end
-    
-    def not_sure 
-    end
-
-    def signup_start
-      @context.set_state(StateContext::SIGNUP_START)
-    end
-
-    def signup_complete
-      @context.set_state(StateContext::SIGNUP_COMPLETE)
-    end
-
-    def watch_video
-      @context.set_state(StateContext::WATCH_VIDEO)
-    end
-    
-    def hash
-      return 2
-    end
-  end
-
-  class StateSignupComplete
-    def initialize context
-      @context = context
-    end
-
-    def landing_page
-      @context.set_state(StateContext::NOT_SURE)
-    end
-    
-    def not_sure 
-      @context.set_state(StateContext::NOT_SURE)
-    end
-
-    def signup_start
-      @context.set_state(StateContext::SIGNUP_START)
-    end
-
-    def signup_complete
-    end
-
-    def watch_video
-      @context.set_state(StateContext::WATCH_VIDEO)
-    end
-
-    def hash
-      return 3
-    end
-  end
-
-  class StateWatchVideo
-    def initialize context
-      @context = context
-    end
-
-    def landing_page
-      @context.set_state(StateContext::NOT_SURE)
-    end
-    
-    def not_sure 
-      @context.set_state(StateContext::NOT_SURE)
-    end
-
-    def signup_start
-      @context.set_state(StateContext::SIGNUP_START)
-    end
-
-    def signup_complete
-      @context.set_state(StateContext::SIGNUP_COMPLETE)
-    end
-
-    def watch_video
-    end
-
-    def hash
-      return 4
-    end
   end
 end
 
-class LandingNormalStateAnalyzeJob
+class LandingNormalStateAnalyzeJob < AnalyzeJob
+  
+  def initialize
+    @pattern_count = Hash.new 
+    @output_filename = "landing_normal_state.output"
+    @result = ""
+  end
+
+  # ==> methods derivation Has to implement
+  def analyze_session session
+    pattern = LandingNormalState::StateContext.new
+    analyze session do |action|
+      pattern.next(action)
+    end
+    @pattern_count[pattern] ||= 0
+    @pattern_count[pattern] += 1
+  end
+
+  def output_format
+    sort_patterns = @pattern_count.sort do |a,b|
+      a[1] <=> b[1]
+    end
+    sort_patterns.each do |pattern, count|
+      @result += "#{pattern.to_s} in #{count} sessions\n"
+    end
+  end
 
 end
     
+      

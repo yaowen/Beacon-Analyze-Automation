@@ -4,12 +4,14 @@ require 'date'
 require './raw_actions/play_action'
 require './raw_actions/page_load_action'
 require './raw_actions/signup_action'
+require './raw_actions/slider_action'
 
 $cmd_params = Hash.new
 
 PLAY_ACTION = "play_action"
 PAGE_LOAD_ACTION = "page_load_action"
 SIGNUP_ACTION = "signup_action"
+SLIDER_ACTION = "slider_action"
 
 # ==> Analyze Command Parameter
 ARGV.each do |command_param|
@@ -89,20 +91,25 @@ def generate_action action_type
     return PageViewAction.new
   elsif SIGNUP_ACTION == action_type
     return SignUpAction.new
+  elsif SLIDER_ACTION == action_type
+    return SliderAction.new
   end
   return nil
 end
 
 def generate_action_type_with_mark head_line
-  if (head_line =~ /.*field.*/)
+  if (head_line =~ /.*signup_action.*/)
     puts "signup_action"
     return SIGNUP_ACTION
-  elsif(head_line =~ /.*pageurl.*/)
+  elsif(head_line =~ /.*page_load.*/)
     puts "page_load"
     return PAGE_LOAD_ACTION
-  elsif (head_line =~ /.*contentid.*/)
+  elsif (head_line =~ /.*play_action.*/)
     puts "play_action"
     return PLAY_ACTION
+  elsif (head_line =~ /.*slider_action.*/)
+    puts "slider_action"
+    return SLIDER_ACTION
   end
   return nil
 end
@@ -143,7 +150,8 @@ def parse_beacon_files input_dir, options = {}
   end
 end
 
-
+# ==> Parse beacon files into action lists which group on sessionid
+# and computerguid, and order by timestamp
 if File.directory? input_path
   parse_beacon_files(input_path)
 else

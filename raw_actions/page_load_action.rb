@@ -16,8 +16,8 @@ class PageViewAction < RawAction
     @cid = parts[3]
     @sid = parts[4]
     @pageurl = parts[5]
-    @client = parts[6]
-    @os = parts[7]
+    @client = parts[-5]
+    @os = parts[-4]
   end
 
   def to_hash

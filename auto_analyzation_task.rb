@@ -64,7 +64,7 @@ unless use_old_job
                    :start_date => start_date,
                    :end_date => end_date,
                    :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time")
+                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time page_load")
   #Play Video
   jobids << post_beacon_data( 
                    :page_regex => ".*playback/start\?.*userid=0.*",
@@ -72,7 +72,7 @@ unless use_old_job
                    :start_date => start_date,
                    :end_date => end_date,
                    :input_file_types => "playback",
-                   :additional_fields => "computerguid sitesessionid contentid client os time")
+                   :additional_fields => "computerguid sitesessionid contentid packageid client os time play_action")
   #Signup Event
   jobids << post_beacon_data( 
                    :page_regex => ".*sitetracking/signupevent\?.*userid=0.*",
@@ -80,7 +80,15 @@ unless use_old_job
                    :start_date => start_date,
                    :end_date => end_date,
                    :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl field client os time")
+                   :additional_fields => "computerguid sitesessionid pageurl field client os time signup_action")
+  #Slider Event for homepage preview
+  jobids << post_beacon_data( 
+                   :page_regex => ".*sidetracking/slidertracking\?.*userid=0.*",
+                   :job_title => "site japan slidertrack event", 
+                   :start_date => start_date,
+                   :end_date => end_date,
+                   :input_file_types => "sitetracking",
+                   :additional_fields => "computerguid sitesessionid pageurl contentid client os time slider_action")
                    
 else
   jobids = parse_jobids($cmd_params["jobids"])

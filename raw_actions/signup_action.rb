@@ -20,8 +20,8 @@ class SignUpAction < RawAction
     @sid = parts[4]
     @field = parts[6]
     @pageurl = parts[5]
-    @client = parts[-4]
-    @os = parts[-3]
+    @client = parts[-5]
+    @os = parts[-4]
   end
 
   def to_hash

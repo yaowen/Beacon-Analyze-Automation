@@ -7,6 +7,8 @@ require './analyze_jobs/watched_view_analyze'
 require './analyze_jobs/os_analyze'
 require './analyze_jobs/video_watch_analyze'
 require './analyze_jobs/signup_funnel_analyze'
+require './analyze_jobs/landing_normal_state_analyze'
+require './analyze_jobs/conversion_on_landing'
 
 input_path = ARGV[0] || "input.json"
 output_dir_path = ARGV[1] || "default.output"
@@ -22,11 +24,16 @@ job_queue = [
   #VisitNumberCountAnalyzeJob.new,
   #PageViewCountAnalyzeJob.new,
   #OSAnalyzeJob.new,
-  VideoWatchAnalyzeJob.new,
-  SignupFunnelAnalyzeJob.new
+  VideoWatchAnalyzeJob.new
+  #SignupFunnelAnalyzeJob.new,
+  #LandingNormalStateAnalyzeJob.new,
+  #ConversionOnLandingCountAnalyzeJob.new
 ]
 
+linecount = 0
 lines.each do |line|
+  linecount += 1
+  print("#{linecount}\r") if linecount % 1000 == 0
   user_pattern_actions = JSON.parse(line)
   #analyze jobs
   job_queue.each do |analyze_job|
