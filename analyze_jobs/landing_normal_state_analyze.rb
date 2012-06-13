@@ -188,12 +188,26 @@ class LandingNormalState
       @state = nil 
       @state_list = []
       @hash_code = 0
+
+      #==> marks
+      @mark_conversion = false
+    end
+
+    def update_marks n_state
+      if n_state.eql? @state_signup_complete
+        @mark_conversion = true
+      end
+    end
+
+    def conversion?
+      return @mark_conversion
     end
 
     def set_state n_state
       @state = n_state
       @state_list << @state
       @hash_code = @hash_code * 4 + @state.hash
+      update_marks n_state
     end
 
     def next action
@@ -284,6 +298,7 @@ class LandingNormalStateAnalyzeJob < AnalyzeJob
   
   def initialize
     @pattern_count = Hash.new 
+    @pattern_conversion_count = Hash.new
     @output_filename = "landing_normal_state.output"
     @result = ""
   end
@@ -296,6 +311,11 @@ class LandingNormalStateAnalyzeJob < AnalyzeJob
     end
     @pattern_count[pattern] ||= 0
     @pattern_count[pattern] += 1
+
+    @pattern_conversion_count[pattern] ||= 0
+    if pattern.conversion?
+      @pattern_conversion_count[pattern] += 1
+    end
   end
 
   def output_format
@@ -303,7 +323,8 @@ class LandingNormalStateAnalyzeJob < AnalyzeJob
       a[1] <=> b[1]
     end
     sort_patterns.each do |pattern, count|
-      @result += "#{pattern.to_s} in #{count} sessions\n"
+      conversion = @pattern_conversion_count[pattern]
+      @result += "#{pattern.to_s} in #{count} sessions, and conversions #{conversion}\n, rate is #{conversion * 100.0 / count}%"
     end
   end
 

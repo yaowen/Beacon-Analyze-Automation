@@ -19,7 +19,7 @@ class PlayAction < RawAction
 
   def to_hash
     v_hash = super
-    v_hash = v_hash.merge({:content_id => @content_id, :visit_time => @timestamp, :client => @client, :os => @os})
+    v_hash = v_hash.merge({:content_id => @content_id, :package_id => @package_id, :visit_time => @timestamp, :client => @client, :os => @os})
     return v_hash
   end
 end

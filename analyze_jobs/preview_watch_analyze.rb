@@ -1,12 +1,12 @@
 require './analyze_job'
 require 'set'
 require 'net/http'
-class VideoWatchAnalyzeJob < AnalyzeJob
+class PreviewWatchAnalyzeJob < AnalyzeJob
   
   def initialize
     @watch_conversions = Hash.new
     @watch_visitors = Hash.new
-    @output_filename = "video_watch.output"
+    @output_filename = "preview_watch.output"
     @result = ""
   end
   # ==> methods derivation Has to implement
@@ -15,7 +15,16 @@ class VideoWatchAnalyzeJob < AnalyzeJob
     conversion_complete = false
     analyze session do |action|
       if action["_type"] == "PlayAction"
-        watched_video_set.add action["content_id"]  
+        if action["package_id"] == "4"
+          watched_video_set.add "Free Episode"
+        elsif action["package_id"] == "5"
+          watched_video_set.add "90s"
+        end
+      elsif action["_type"] == "SliderAction"
+        if action["pageurl"] =~ /^http:\/\/www2\.hulu\.jp\/?(\?.*)?$/
+          puts action["pageurl"]
+          watched_video_set.add "Homepage Preview"
+        end
       elsif action["_type"] == "PageViewAction" 
         if conversion? action
           conversion_complete = true
@@ -37,14 +46,7 @@ class VideoWatchAnalyzeJob < AnalyzeJob
   def get_video_name content_id
     uri = URI("http://rest.internal.hulu.com/videos/?content_id=#{content_id}")
     res = Net::HTTP.get_response(uri)
-    body = res.body.gsub("\n", "")
-    
-    content = body.scan(/<title>(.*?)<\/title>/)[0][0]
-
-    if content =~ /Pilot/
-      content = body.scan(/<show>.*?<name>(.*?)<\/name>.*?<\/show>/)[0][0]
-    end
-    return content
+    return res.body.scan(/<title>(.*?)<\/title>/)[0][0]
   end
 
   def output_format
@@ -56,13 +58,10 @@ class VideoWatchAnalyzeJob < AnalyzeJob
     end
     linecount = 0
     sorted_map.each do |content_id, count|
-      if count < 50
-        next
-      end
       linecount += 1
       print("#{linecount}\r")
       @watch_conversions[content_id] ||= 0
-      @result += "video: #{get_video_name content_id} -- watched people: #{count}, conversion rate: #{@watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]} %\n"
+      @result += "video: #{content_id} -- watched people: #{count}, conversion rate: #{@watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]} %\n"
     end
   end
 end

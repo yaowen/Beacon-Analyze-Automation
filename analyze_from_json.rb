@@ -9,6 +9,7 @@ require './analyze_jobs/video_watch_analyze'
 require './analyze_jobs/signup_funnel_analyze'
 require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
+require './analyze_jobs/preview_watch_analyze'
 
 input_path = ARGV[0] || "input.json"
 output_dir_path = ARGV[1] || "default.output"
@@ -24,10 +25,11 @@ job_queue = [
   #VisitNumberCountAnalyzeJob.new,
   #PageViewCountAnalyzeJob.new,
   #OSAnalyzeJob.new,
-  VideoWatchAnalyzeJob.new
-  #SignupFunnelAnalyzeJob.new,
-  #LandingNormalStateAnalyzeJob.new,
-  #ConversionOnLandingCountAnalyzeJob.new
+  VideoWatchAnalyzeJob.new,
+  PreviewWatchAnalyzeJob.new,
+  SignupFunnelAnalyzeJob.new,
+  LandingNormalStateAnalyzeJob.new,
+  ConversionOnLandingCountAnalyzeJob.new
 ]
 
 linecount = 0

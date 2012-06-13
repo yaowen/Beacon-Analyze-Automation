@@ -18,7 +18,7 @@ class RawAction
     month = parseInt(parts[month_idx])
     day = parseInt(parts[day_idx])
       
-    timeofday = parts[-2]
+    timeofday = parts[-3]
     timeofday_parts = timeofday.split(":")
     hour = parseInt(timeofday_parts[0])
     minute = parseInt(timeofday_parts[1])

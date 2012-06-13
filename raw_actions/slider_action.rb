@@ -1,7 +1,7 @@
 require 'date'
 require './raw_action'
 
-class SignUpAction < RawAction
+class SliderAction < RawAction
   attr_reader :sid, :cid
   def initialize
   end

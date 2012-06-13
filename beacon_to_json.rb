@@ -98,6 +98,7 @@ def generate_action action_type
 end
 
 def generate_action_type_with_mark head_line
+  puts head_line
   if (head_line =~ /.*signup_action.*/)
     puts "signup_action"
     return SIGNUP_ACTION

@@ -24,7 +24,10 @@ end
 def validate_directory dir_path
   unless( File.exist? dir_path )
     system_with_command_print("mkdir #{dir_path}")
+  else
+    system_with_command_print("rm #{dir_path}/*")
   end
+
 end
 
 $cmd_params = Hash.new
@@ -55,7 +58,7 @@ unless use_old_job
                    :start_date => start_date, 
                    :end_date => end_date,
                    :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time")
+                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time page_load")
 
   #Conversion
   jobids << post_beacon_data( 
@@ -67,7 +70,7 @@ unless use_old_job
                    :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time page_load")
   #Play Video
   jobids << post_beacon_data( 
-                   :page_regex => ".*playback/start\?.*userid=0.*",
+                   :page_regex => ".*playback/start\\?.*userid=0.*",
                    :job_title => "site japan video play", 
                    :start_date => start_date,
                    :end_date => end_date,
@@ -75,7 +78,7 @@ unless use_old_job
                    :additional_fields => "computerguid sitesessionid contentid packageid client os time play_action")
   #Signup Event
   jobids << post_beacon_data( 
-                   :page_regex => ".*sitetracking/signupevent\?.*userid=0.*",
+                   :page_regex => ".*sitetracking/signupevent\\?.*userid=0.*",
                    :job_title => "site japan signup event", 
                    :start_date => start_date,
                    :end_date => end_date,
@@ -83,7 +86,7 @@ unless use_old_job
                    :additional_fields => "computerguid sitesessionid pageurl field client os time signup_action")
   #Slider Event for homepage preview
   jobids << post_beacon_data( 
-                   :page_regex => ".*sidetracking/slidertracking\?.*userid=0.*",
+                   :page_regex => ".*sitetracking/slidertracking\\?.*userid=0.*",
                    :job_title => "site japan slidertrack event", 
                    :start_date => start_date,
                    :end_date => end_date,
