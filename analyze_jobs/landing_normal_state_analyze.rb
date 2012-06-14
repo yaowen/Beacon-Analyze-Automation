@@ -300,7 +300,7 @@ class LandingNormalStateAnalyzeJob < AnalyzeJob
   def initialize
     @pattern_count = Hash.new 
     @pattern_conversion_count = Hash.new
-    @output_filename = "landing_normal_state.output"
+    @output_filename = "landing_normal_state"
     @result = ""
   end
 

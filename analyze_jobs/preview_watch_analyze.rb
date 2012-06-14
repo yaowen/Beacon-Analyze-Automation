@@ -6,7 +6,7 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
   def initialize
     @watch_conversions = Hash.new
     @watch_visitors = Hash.new
-    @output_filename = "preview_watch.output"
+    @output_filename = "preview_watch"
     @result = ""
   end
   # ==> methods derivation Has to implement

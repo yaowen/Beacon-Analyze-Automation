@@ -4,7 +4,7 @@ class WatchViewCountAnalyzeJob < AnalyzeJob
   def initialize
     @watch_counts = []
     @goal_counts_after_watch = []
-    @output_filename = "watch_view_count.output"
+    @output_filename = "watch_view_count"
     @result = ""
     @visit_count = 0
   end

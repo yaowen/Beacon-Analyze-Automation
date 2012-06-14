@@ -26,9 +26,9 @@ job_queue = [
   #PageViewCountAnalyzeJob.new,
   #OSAnalyzeJob.new,
   VideoWatchAnalyzeJob.new,
-  PreviewWatchAnalyzeJob.new,
-  SignupFunnelAnalyzeJob.new,
-  LandingNormalStateAnalyzeJob.new
+  #PreviewWatchAnalyzeJob.new,
+  SignupFunnelAnalyzeJob.new
+  #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
 ]
 
@@ -45,5 +45,6 @@ end
 
 job_queue.each do |analyze_job|
   analyze_job.output_result output_dir_path
+  analyze_job.before_exit
 end
 exit

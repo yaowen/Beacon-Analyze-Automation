@@ -3,7 +3,7 @@ class StayTimeAnalyzeJob < AnalyzeJob
   
   def initialize
     @goal_count = 0
-    @output_filename = "stay_time.output"
+    @output_filename = "stay_time"
     @result = ""
   end
   # ==> methods derivation Has to implement

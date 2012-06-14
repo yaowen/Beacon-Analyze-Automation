@@ -4,7 +4,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   
   def initialize
     @states_counter = Hash.new
-    @output_filename = "signup_funnel.output"
+    @output_filename = "signup_funnel"
     @result = ""
     @total = 0
   end
@@ -56,6 +56,27 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     @result += "Input Email: #{@states_counter["email"]}\n"
     @result += "Input CC: #{@states_counter["card"]}\n"
     @result += "Conversion: #{@states_counter["conversion"]}\n"
+  end
+
+  def output_csv_format
+    @csv = CSV.generate do |csv_data|
+      # ==> Head Part
+      csv_data << [
+        "Landing", 
+        "Signup Start", 
+        "Input Email", 
+        "Input CC", 
+        "Conversion"]
+
+      # ==> Value Part
+      csv_data << [
+        @states_counter["frontporch"],
+        @states_counter["signup_start"],
+        @states_counter["email"],
+        @states_counter["card"],
+        @states_counter["conversion"]
+      ]
+    end
   end
 end
 
