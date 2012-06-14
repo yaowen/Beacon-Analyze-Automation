@@ -64,8 +64,8 @@ def post_beacon_data options = {}
 
   #==> send post request to create a new job
   headers = { "Cookie" => cookie }
-  puts cookie
 
+  #puts cookie
   data = generate_post_data(res, 
                  :page_regex => page_regex,
                  :start_date => start_date,

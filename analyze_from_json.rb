@@ -28,8 +28,8 @@ job_queue = [
   VideoWatchAnalyzeJob.new,
   PreviewWatchAnalyzeJob.new,
   SignupFunnelAnalyzeJob.new,
-  LandingNormalStateAnalyzeJob.new,
-  ConversionOnLandingCountAnalyzeJob.new
+  LandingNormalStateAnalyzeJob.new
+  #ConversionOnLandingCountAnalyzeJob.new
 ]
 
 linecount = 0

@@ -24,10 +24,16 @@ end
 def validate_directory dir_path
   unless( File.exist? dir_path )
     system_with_command_print("mkdir #{dir_path}")
-  else
-    system_with_command_print("rm #{dir_path}/*")
   end
 
+end
+
+def clean_up dir_path
+  if( File.exist? dir_path)
+    #in case there aren't any file in the path which will cause problem
+    system_with_command_print("touch #{dir_path}/for_remove")
+    system_with_command_print("rm #{dir_path}/*")
+  end
 end
 
 $cmd_params = Hash.new
@@ -114,17 +120,21 @@ else
 end
 
 #check file exist
+local_store_beacon_directory = "#{STORE_PATH}/#{date_str}"
+clean_up(local_store_beacon_directory)
+validate_directory(local_store_beacon_directory)
 jobids.each do |jobid|
   job_file_path = "#{USERJOB}/#{jobid}.tsv.gz"
   job_store_file_name = "#{date_str}_#{jobid}.tsv.gz"
 
-  local_store_beacon_directory = "#{STORE_PATH}/#{date_str}"
   local_store_beacon_file_path = "#{local_store_beacon_directory}/#{job_store_file_name}"
+
+
+
   try_limit = 100
   try_limit.times do |i|
     begin
       when_file_exist job_file_path do
-        validate_directory(local_store_beacon_directory)
         #copy the generated tsv.gz file into local_store_beacon_directory
         system_with_command_print("cp #{USERJOB}/#{jobid}.tsv.gz #{local_store_beacon_file_path}")
         #unzip the *.tsv.gz file

@@ -194,12 +194,13 @@ class LandingNormalState
     end
 
     def update_marks n_state
+      puts "hash: #{n_state.hash}"
       if n_state.eql? @state_signup_complete
         @mark_conversion = true
       end
     end
 
-    def conversion?
+    def pattern_conversion?
       return @mark_conversion
     end
 
@@ -313,7 +314,7 @@ class LandingNormalStateAnalyzeJob < AnalyzeJob
     @pattern_count[pattern] += 1
 
     @pattern_conversion_count[pattern] ||= 0
-    if pattern.conversion?
+    if pattern.pattern_conversion?
       @pattern_conversion_count[pattern] += 1
     end
   end

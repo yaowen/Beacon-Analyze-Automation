@@ -39,10 +39,16 @@ class VideoWatchAnalyzeJob < AnalyzeJob
     res = Net::HTTP.get_response(uri)
     body = res.body.gsub("\n", "")
     
-    content = body.scan(/<title>(.*?)<\/title>/)[0][0]
+    content = ""
+    video_type = body.scan(/<video-type>(.*?)<\/video-type>/)[0][0]
 
-    if content =~ /Pilot/
-      content = body.scan(/<show>.*?<name>(.*?)<\/name>.*?<\/show>/)[0][0]
+    if video_type == "episode"
+      show_name = body.scan(/<show>.*?<name>(.*?)<\/name>.*?<\/show>/)[0][0]
+      season_number = body.scan(/<season-number.*?>(.*?)<\/season-number.*?>/)[0][0]
+      episode_number = body.scan(/<episode-number.*?>(.*?)<\/episode-number.*?>/)[0][0]
+      content = "#{show_name}-#{season_number}-#{episode_number}"
+    else
+      content = body.scan(/<title>(.*?)<\/title>/)[0][0]
     end
     return content
   end
@@ -62,7 +68,7 @@ class VideoWatchAnalyzeJob < AnalyzeJob
       linecount += 1
       print("#{linecount}\r")
       @watch_conversions[content_id] ||= 0
-      @result += "video: #{get_video_name content_id} -- watched people: #{count}, conversion rate: #{@watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]} %\n"
+      @result += "[#{content_id}]video: #{get_video_name content_id} -- watched people: #{count}, conversion rate: #{@watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]} %\n"
     end
   end
 end
