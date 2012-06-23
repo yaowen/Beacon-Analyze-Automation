@@ -1,17 +1,9 @@
 require 'set'
 require 'json'
 require 'date'
-require './raw_actions/play_action'
-require './raw_actions/page_load_action'
-require './raw_actions/signup_action'
-require './raw_actions/slider_action'
+require './job_config'
 
 $cmd_params = Hash.new
-
-PLAY_ACTION = "play_action"
-PAGE_LOAD_ACTION = "page_load_action"
-SIGNUP_ACTION = "signup_action"
-SLIDER_ACTION = "slider_action"
 
 # ==> Analyze Command Parameter
 ARGV.each do |command_param|
@@ -59,18 +51,8 @@ def traverse_dir(file_path)
   end
 end
 
-def parseInt string
-    if string =~ /^0\d*$/
-        Integer(string[1..-1])
-    else
-        Integer(string)
-    end
-end
 
 #since a beacon line may include page_type which may affect other fields postion
-def check_type parts
-  return parts.length == FIELDS_NUM ? :with_page_type : :without_page_type 
-end
 
 def add_element_to_hash_set container, key, element
   if key.nil? or "" == key
@@ -84,45 +66,21 @@ def add_element_to_hash_set container, key, element
   nArray << element;
 end
 
-def generate_action action_type
-  if PLAY_ACTION == action_type
-    return PlayAction.new
-  elsif PAGE_LOAD_ACTION == action_type
-    return PageViewAction.new
-  elsif SIGNUP_ACTION == action_type
-    return SignUpAction.new
-  elsif SLIDER_ACTION == action_type
-    return SliderAction.new
-  end
-  return nil
-end
-
-def generate_action_type_with_mark head_line
-  puts head_line
-  if (head_line =~ /.*signup_action.*/)
-    puts "signup_action"
-    return SIGNUP_ACTION
-  elsif(head_line =~ /.*page_load.*/)
-    puts "page_load"
-    return PAGE_LOAD_ACTION
-  elsif (head_line =~ /.*play_action.*/)
-    puts "play_action"
-    return PLAY_ACTION
-  elsif (head_line =~ /.*slider_action.*/)
-    puts "slider_action"
-    return SLIDER_ACTION
-  end
-  return nil
+def extract_action_type_with_mark head_line
+  parts = head_line.split(/\t/)
+  return parts[-2]
 end
 
 def parse_beacon_file input_path, options = {:action_type => "page_load_action"}
+  job_config = JobConfig.new
+  job_config.load('./job.yml')
   beacon_file = File.open(input_path, 'r')
   flag = false
   inputLineCount ||= 0
   inputLineLimit = $cmd_params["linelimit"] || -1
-  action_type = generate_action_type_with_mark(beacon_file.first)
+  action_type = extract_action_type_with_mark(beacon_file.first)
   beacon_file.each_line do |line|
-    action = generate_action(action_type);
+    action = job_config.create_action(action_type);
     unless flag
       flag = true
       next
@@ -135,8 +93,8 @@ def parse_beacon_file input_path, options = {:action_type => "page_load_action"}
       break;
     end
     action.parse_beacon_line(line)
-    add_element_to_hash_set $sessions, action.sid, action.to_hash
-    add_element_to_hash_set $visitors, action.cid , action.to_hash
+    add_element_to_hash_set $sessions, action["sitesessionid"], action.to_hash
+    add_element_to_hash_set $visitors, action["computerguid"], action.to_hash
   end
   puts
   beacon_file.close

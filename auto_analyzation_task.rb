@@ -1,6 +1,6 @@
 #automating the whole regular analyze job flow
-require './post_beacon_mission.rb'
-require './file_exist_checker.rb'
+require './file_exist_checker'
+require './job_config'
 
 #STORE_PATH="/home/deploy/yaowen.zheng"
 #USERJOB="/mnt/garfield_dump/userjobs"
@@ -25,8 +25,19 @@ def validate_directory dir_path
   unless( File.exist? dir_path )
     system_with_command_print("mkdir #{dir_path}")
   end
-
 end
+
+#==> path settings
+raw_beacon_root_directory = "#{STORE_PATH}/beacon_raw_data"
+json_root_directory = "#{STORE_PATH}/json_mid_file"
+metrics_root_directory = "#{STORE_PATH}/metrics"
+
+validate_directory(raw_beacon_root_directory)
+validate_directory(json_root_directory)
+validate_directory(json_root_directory + "/session")
+validate_directory(json_root_directory + "/visitors")
+validate_directory(metrics_root_directory)
+
 
 def clean_up dir_path
   if( File.exist? dir_path)
@@ -51,6 +62,10 @@ use_old_job = $cmd_params["useoldjob"].nil? ? false : true
 jobids = []
 #post data
 
+#init job_config class
+job_config = JobConfig.new
+job_config.load("./job.yml")
+
 def parse_jobids jobid_str
   m_jobids = jobid_str.split("#")
 end
@@ -58,47 +73,7 @@ end
 
 unless use_old_job
   #New Visiter Page View
-  jobids << post_beacon_data( 
-                   :page_regex => ".*sitetracking/pageload.*userid=0.*", 
-                   :job_title => "site japan fp",
-                   :start_date => start_date, 
-                   :end_date => end_date,
-                   :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time page_load")
-
-  #Conversion
-  jobids << post_beacon_data( 
-                   :page_regex => ".*sitetracking/pageload.*userid=[1-9][0-9]*.*signup_complete.*",
-                   :job_title => "site japan convert", 
-                   :start_date => start_date,
-                   :end_date => end_date,
-                   :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl client os pvic pvis vc time page_load")
-  #Play Video
-  jobids << post_beacon_data( 
-                   :page_regex => ".*playback/start\\?.*userid=0.*",
-                   :job_title => "site japan video play", 
-                   :start_date => start_date,
-                   :end_date => end_date,
-                   :input_file_types => "playback",
-                   :additional_fields => "computerguid sitesessionid contentid packageid client os time play_action")
-  #Signup Event
-  jobids << post_beacon_data( 
-                   :page_regex => ".*sitetracking/signupevent\\?.*userid=0.*",
-                   :job_title => "site japan signup event", 
-                   :start_date => start_date,
-                   :end_date => end_date,
-                   :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl field client os time signup_action")
-  #Slider Event for homepage preview
-  jobids << post_beacon_data( 
-                   :page_regex => ".*sitetracking/slidertracking\\?.*userid=0.*",
-                   :job_title => "site japan slidertrack event", 
-                   :start_date => start_date,
-                   :end_date => end_date,
-                   :input_file_types => "sitetracking",
-                   :additional_fields => "computerguid sitesessionid pageurl contentid client os time slider_action")
-                   
+  jobids = job_config.generate_jobs(start_date, end_date)
 else
   jobids = parse_jobids($cmd_params["jobids"])
 end
@@ -120,7 +95,7 @@ else
 end
 
 #check file exist
-local_store_beacon_directory = "#{STORE_PATH}/#{date_str}"
+local_store_beacon_directory = "#{raw_beacon_root_directory}/#{date_str}"
 clean_up(local_store_beacon_directory)
 validate_directory(local_store_beacon_directory)
 jobids.each do |jobid|
@@ -128,7 +103,6 @@ jobids.each do |jobid|
   job_store_file_name = "#{date_str}_#{jobid}.tsv.gz"
 
   local_store_beacon_file_path = "#{local_store_beacon_directory}/#{job_store_file_name}"
-
 
 
   try_limit = 100
@@ -151,16 +125,17 @@ end
 
 
 #translate beacon into json and aggregate according to session
-validate_directory("#{STORE_PATH}/json_mid_file")
 
-system_with_command_print("ruby beacon_to_json.rb input=#{STORE_PATH}/#{date_str} output=#{STORE_PATH}/json_mid_file/#{date_str}.json")
+system_with_command_print("ruby beacon_divider.rb input=#{raw_beacon_root_directory}/#{date_str} output=#{json_root_directory}")
 
 #start analyzing jobs
-validate_directory("#{STORE_PATH}/metrics")
-validate_directory("#{STORE_PATH}/metrics/#{date_str}_session")
-validate_directory("#{STORE_PATH}/metrics/#{date_str}_visitor")
-system_with_command_print("#{RUBY_CMD} analyze_from_json.rb #{STORE_PATH}/json_mid_file/#{date_str}.json_session #{STORE_PATH}/metrics/#{date_str}_session")
-system_with_command_print("#{RUBY_CMD} analyze_from_json.rb #{STORE_PATH}/json_mid_file/#{date_str}.json_visitors #{STORE_PATH}/metrics/#{date_str}_visitor")
+validate_directory("#{metrics_root_directory}/#{date_str}_session")
+validate_directory("#{metrics_root_directory}/#{date_str}_visitor")
+
+start_date_str = start_date.strftime("%Y-%m-%d")
+end_date_str = end_date.strftime("%Y-%m-%d")
+system_with_command_print("#{RUBY_CMD} analyze_from_json.rb input=#{json_root_directory}/session output=#{metrics_root_directory}/#{date_str}_session startdate=#{start_date_str} enddate=#{end_date_str}")
+system_with_command_print("#{RUBY_CMD} analyze_from_json.rb input=#{json_root_directory}/visitors output=#{metrics_root_directory}/#{date_str}_visitor startdate=#{start_date_str} enddate=#{end_date_str}")
 
 
 

@@ -1,0 +1,53 @@
+---
+  common_params:
+    - "computerguid"
+    - "sitesessionid"
+    - "client"
+    - "os"
+  job_types:
+    - type_name: "page_load"
+      additional_fields: 
+        - "pageurl"
+    - type_name: "play_action"
+      additional_fields: 
+        - "packageid"
+        - "contentid"
+    - type_name: "signup_action"
+      additional_fields: 
+        - "pageurl"
+        - "field" 
+        - "event"
+    - type_name: "slider_action"
+      additional_fields: 
+        - "pageurl" 
+        - "contentid"
+
+  jobs:
+
+    - page_regex: ".*sitetracking/pageload.*userid=0.*"
+      job_title: "site japan fp"
+      input_file_types: "sitetracking"
+      job_type: "page_load"
+
+    - page_regex: ".*sitetracking/pageload.*userid=[1-9][0-9]*.*signup_complete.*"
+      job_title: "site japan convert"
+      input_file_types: "sitetracking"
+      job_type: "page_load"
+      
+    - page_regex: ".*playback/start\\?.*userid=0.*"
+      job_title: "site japan video play"
+      input_file_types: "playback"
+      job_type: "play_action"
+
+    - page_regex: ".*sitetracking/signupevent\\?.*userid=0.*"
+      job_title: "site japan signup event"
+      input_file_types: "sitetracking"
+      job_type: "signup_action"
+
+    - page_regex: ".*sitetracking/slidertracking\\?.*userid=0.*"
+      job_title: "site japan slidertrack event"
+      input_file_types: "sitetracking"
+      job_type: "slider_action"
+      
+      
+          

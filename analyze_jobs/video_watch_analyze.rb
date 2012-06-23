@@ -13,6 +13,9 @@ class VideoWatchAnalyzeJob < AnalyzeJob
     @show_conversions = Hash.new
     @show_visitors = Hash.new
 
+    @visitors = 0
+    @conversions = 0
+
     @linecount = 0
 
     @output_filename = "video_watch"
@@ -58,26 +61,28 @@ class VideoWatchAnalyzeJob < AnalyzeJob
     
   end
 
-  def before_exit
+  def before_output
     save_video_data
   end
 
   # ==> methods derivation Has to implement
   def analyze_session session
+    @visitors += 1
     watched_video_set = Set.new
     watched_show_set = Set.new
     conversion_complete = false
     analyze session do |action|
-      if action["_type"] == "PlayAction"
-        watched_video_set.add action["content_id"]  
-        watched_show_set.add get_show_name(action["content_id"])
-      elsif action["_type"] == "PageViewAction" 
+      if action["_type"] == "play_action"
+        watched_video_set.add action["contentid"]  
+        watched_show_set.add get_show_name(action["contentid"])
+      elsif action["_type"] == "page_load" 
         if conversion? action
           conversion_complete = true
         end
       end
     end
     if conversion_complete
+      @conversions += 1
       watched_video_set.each do |content_id|
         @watch_conversions[content_id] ||= 0
         @watch_conversions[content_id] += 1
@@ -114,12 +119,14 @@ class VideoWatchAnalyzeJob < AnalyzeJob
   end
 
   def generate_video_info content_id
+    begin
     unless @video_name_cache[content_id].nil?
       return @video_name_cache[content_id]
     end
 
     @linecount += 1
-    print("download video info: #{@linecount}\r")
+    print("download video info: #{@linecount} and video_name_cache size is: #{@video_name_cache.length}\r")
+    save_video_data if @linecount % 20 == 0
 
     uri = URI("http://rest.internal.hulu.com/videos/?content_id=#{content_id}")
     res = Net::HTTP.get_response(uri)
@@ -139,6 +146,9 @@ class VideoWatchAnalyzeJob < AnalyzeJob
 
     @video_name_cache[content_id] = content
     @show_name_cache[content_id] = show_name || content
+    rescue
+      content = "Error Occurs"
+    end
     return content
   end
 
@@ -167,13 +177,20 @@ class VideoWatchAnalyzeJob < AnalyzeJob
   end
 
   def output_csv_format
+    conversion_rate_total = @conversions * 1.0 / @visitors
     @csv = CSV.generate do |csv_data|
+      csv_data << [
+        "Total Conversion Rate",
+        conversion_rate_total
+      ]
       # ==> Head Part
       csv_data << [
         "VideoName",
         "Watched Visitors",
+        "Watched Rate",
         "Conversion",
-        "Conversion Rate"
+        "Conversion Rate",
+        "Improvement"
       ]
 
       # ==> Value Part
@@ -183,21 +200,27 @@ class VideoWatchAnalyzeJob < AnalyzeJob
           next
         end
         conversion = @watch_conversions[content_id]
-        conversion_rate = @watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]
+        conversion_rate = @watch_conversions[content_id] * 1.0 / @watch_visitors[content_id]
+        watch_rate = count * 1.0 / @visitors
+        improvement = conversion_rate * 1.0 / conversion_rate_total - 1 
 
         csv_data << [
           get_video_name(content_id),
           count.to_s,
+          watch_rate.to_s,
           conversion.to_s,
-          conversion_rate.to_s
+          conversion_rate.to_s,
+          improvement.to_s
         ]
       end
 
       csv_data << [
         "ShowName",
         "Watched Visitors",
+        "Watched Rate",
         "Conversion",
-        "Conversion Rate"
+        "Conversion Rate",
+        "Improvement"
       ]
       # ==> Value Part
       sorted_map = sort_by_conversion_rate @show_visitors, @show_conversions
@@ -206,16 +229,24 @@ class VideoWatchAnalyzeJob < AnalyzeJob
           next
         end
         conversion = @show_conversions[content_id]
-        conversion_rate = @show_conversions[content_id] * 100.0 / @show_visitors[content_id]
+        conversion_rate = @show_conversions[content_id] * 1.0 / @show_visitors[content_id]
+        watch_rate = count * 1.0 / @visitors
+        improvement = conversion_rate * 1.0 / conversion_rate_total - 1 
 
         csv_data << [
           content_id,
           count.to_s,
+          watch_rate.to_s,
           conversion.to_s,
-          conversion_rate.to_s
+          conversion_rate.to_s,
+          improvement.to_s
         ]
       end
     end
+  end
+
+  def output_email_format
+    @email_report = ""
   end
 end
 
