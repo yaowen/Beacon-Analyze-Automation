@@ -23,7 +23,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   end
 
   def formalize
-    marks = ["frontporch", "signup_start", "email", "card", "conversion"]
+    marks = ["frontporch", "signup_start", "email", "step1", "card", "conversion"]
     @states_counter.each do |key, state_counter|
       marks.each do |mark|
         state_counter[mark] ||= 0
@@ -47,6 +47,8 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
       if action["_type"] == "signup_action"
         if action["field"] == "email"
           marks.add "email"
+        elsif action["field"] == "continue_s2"
+          marks.add "step1"
         elsif action["field"] == "card"
           marks.add "card"
         end
@@ -75,6 +77,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
       @result += "Landing: #{state_counter["frontporch"]}\n"
       @result += "Signup Start: #{state_counter["signup_start"]}\n"
       @result += "Input Email: #{state_counter["email"]}\n"
+      @result += "Step1 Complete: #{state_counter["step1"]}\n"
       @result += "Input CC: #{state_counter["card"]}\n"
       @result += "Conversion: #{state_counter["conversion"]}\n"
     end
@@ -87,6 +90,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
         "Landing", 
         "Signup Start", 
         "Input Email", 
+        "Step1 Complete",
         "Input CC", 
         "Conversion"]
       @states_counter.each do |key, state_counter|
@@ -98,6 +102,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           state_counter["frontporch"],
           state_counter["signup_start"],
           state_counter["email"],
+          state_counter["step1"],
           state_counter["card"],
           state_counter["conversion"]
         ]

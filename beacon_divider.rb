@@ -108,7 +108,7 @@ def output_to_json container, filename
     linecount += 1
     print(linecount.to_s + "\r") if linecount % 1000 == 0
     sorted_value = value.sort do |a, b|
-      a[:visit_time] <=> b[:visit_time]
+      a["visit_time"] <=> b["visit_time"]
     end
     outputFile.puts sorted_value.to_json
   end
@@ -146,7 +146,7 @@ def aggregate_json_file input_path
   output_file_name = input_path.split("/")[-1].gsub("temp_json", "json")
   puts "output_path_dir:#{output_path_dir}"
   output_to_json(sessions, output_path_dir + "/session/" + output_file_name)
-  output_to_json(sessions, output_path_dir + "/visitors/" + output_file_name)
+  output_to_json(visitors, output_path_dir + "/visitors/" + output_file_name)
   json_mid_file.close
 end
 

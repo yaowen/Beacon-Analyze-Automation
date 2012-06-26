@@ -27,7 +27,6 @@ end
 def extract_version pageurl
   version = pageurl.scan(/\?ver=(\d+)/)[0]
   unless version.nil?
-    puts "version: " + pageurl 
     return version[0]
   end
   if pageurl =~ /^http\:\/\/www2\.hulu\.jp\/(\?.*)?$/
