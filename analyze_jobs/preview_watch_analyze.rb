@@ -29,9 +29,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
       end
 
       if action["_type"] == "play_action"
-        if action["package_id"] == "4"
+        if action["packageid"] == "4"
           watched_video_set.add "Free Episode"
-        elsif action["package_id"] == "5"
+        elsif action["packageid"] == "5"
           watched_video_set.add "90s"
         end
       elsif action["_type"] == "slider_action"
