@@ -14,6 +14,13 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
     mark_landing = false
     mark_conversion = false
 
+    unless during?(
+      session[0]["visit_time"],
+      "2012-05-17 22:00:00 +0900",
+      "2012-05-22 11:00:00 +0900")
+      return
+    end
+
     version = ""
     analyze session do |action|
       if !mark_landing and action["_type"] == "page_load"
@@ -28,14 +35,14 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
         mark_conversion = true
       end
     end
-    @visits[visit_time.wday] ||= {}
-    @visits[visit_time.wday][version] ||= 0 
-    @visits[visit_time.wday][version] += 1
+    @visits[version] ||= {}
+    @visits[version][visit_time.wday] ||= 0 
+    @visits[version][visit_time.wday] += 1
 
     if mark_conversion
-      @goal_count[visit_time.wday] ||= {}
-      @goal_count[visit_time.wday][version] ||= 0
-      @goal_count[visit_time.wday][version] += 1
+      @goal_count[version] ||= {}
+      @goal_count[version][visit_time.wday] ||= 0
+      @goal_count[version][visit_time.wday] += 1
     end
   end
 
@@ -51,8 +58,8 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
         "Conversion",
         "Conversion Rate"
       ]
-      @visits.each do |weekday, visit_version_data|
-        visit_version_data.each do |version, visit_count|
+      @visits.each do |version, visit_day_data|
+        visit_version_data.each do |weekday, visit_count|
           @goal_count[weekday] ||= {}
           @goal_count[weekday][version] ||= 0
           conversion = @goal_count[weekday][version]
