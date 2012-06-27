@@ -33,17 +33,22 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
 
   def analyze_session session
     marks = Set.new
-    unless front_porch? session[0]
-      return
-    end
     unless during?(
       session[0]["visit_time"], 
       "2012-05-18 00:00:00 +0000", 
       "2012-09-21 00:00:00 +0000")
       return
     end
-    version = extract_version session[0]["pageurl"]
+    mark_landing = false
+    version = ""
     analyze session do |action|
+      if !mark_landing && action["_type"] == "page_load"
+        unless front_porch? action
+          return
+        end
+        version = extract_version action["pageurl"]
+        mark_landing = true
+      end
       if action["_type"] == "signup_action"
         if action["field"] == "email"
           marks.add "email"
@@ -61,6 +66,10 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           marks.add "signup_start"
         end
       end
+    end
+
+    unless mark_landing
+      return
     end
 
     @states_counter[version] ||= {}
