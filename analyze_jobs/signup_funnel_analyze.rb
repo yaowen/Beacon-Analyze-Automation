@@ -35,19 +35,18 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     marks = Set.new
     unless during?(
       session[0]["visit_time"], 
-      "2012-05-18 00:00:00 +0000", 
-      "2012-09-21 00:00:00 +0000")
+      "2012-05-17 22:00:00 +0900", 
+      "2012-05-22 11:00:00 +0900")
       return
     end
     mark_landing = false
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
-        unless front_porch? action
-          return
+        if front_porch? action
+          version = extract_version action["pageurl"]
+          mark_landing = true
         end
-        version = extract_version action["pageurl"]
-        mark_landing = true
       end
       if action["_type"] == "signup_action"
         if action["field"] == "email"
