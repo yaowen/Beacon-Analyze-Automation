@@ -17,7 +17,17 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     watched_video_set = Set.new
     conversion_complete = false
     @total_visitors += 1
+    mark_landing = false
+    version = ""
     analyze session do |action|
+      if !mark_landing && action["_type"] == "page_load"
+        unless front_porch? action
+          return
+        end
+        mark_landing = true
+        version = extract_version action["pageurl"] 
+      end
+
       if action["_type"] == "play_action"
         if action["package_id"] == "4"
           watched_video_set.add "Free Episode"
@@ -35,39 +45,28 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         end
       end
     end
+
+    unless mark_landing
+      return
+    end
     if conversion_complete
       @total_conversions += 1
       watched_video_set.each do |content_id|
-        @watch_conversions[content_id] ||= 0
-        @watch_conversions[content_id] += 1
+        @watch_conversions[version] ||= {}
+        @watch_conversions[version][content_id] ||= 0
+        @watch_conversions[version][content_id] += 1
       end 
     end
     watched_video_set.each do |content_id|
-      @watch_visitors[content_id] ||= 0
-      @watch_visitors[content_id] += 1
+      @watch_visitors[version] ||= {}
+      @watch_visitors[version][content_id] ||= 0
+      @watch_visitors[version][content_id] += 1
     end 
-  end
-
-  def get_video_name content_id
-    uri = URI("http://rest.internal.hulu.com/videos/?content_id=#{content_id}")
-    res = Net::HTTP.get_response(uri)
-    return res.body.scan(/<title>(.*?)<\/title>/)[0][0]
   end
 
   def output_format
     @result = ""
-    sorted_map = @watch_visitors.sort do |a, b|
-      @watch_conversions[a[0]] ||= 0
-      @watch_conversions[b[0]] ||= 0
-      (@watch_conversions[a[0]] * 1.0 / a[1]) <=> (@watch_conversions[b[0]] * 1.0 / b[1])
-    end
-    linecount = 0
-    sorted_map.each do |content_id, count|
-      linecount += 1
-      print("#{linecount}\r")
-      @watch_conversions[content_id] ||= 0
-      @result += "video: #{content_id} -- watched people: #{count}, conversion rate: #{@watch_conversions[content_id] * 100.0 / @watch_visitors[content_id]} %\n"
-    end
+    return
   end
 
   def output_csv_format
@@ -78,6 +77,7 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         conversion_rate_total.to_s
       ]
       csv_data << [
+        "Version",
         "Category",
         "Watched Visitors",
         "Watched Rate",
@@ -85,20 +85,25 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         "Conversion Rate",
         "Improvement"
       ]
-      @watch_visitors.each do |content_id, watch_count|
-        conversion = @watch_conversions[content_id]
-        conversion_rate = conversion * 1.0 / watch_count
-        watch_rate = watch_count * 1.0 / @total_visitors
-        improvement = conversion_rate * 1.0 / conversion_rate_total - 1
+      @watch_visitors.each do |version, watch_visitor_counter|
+        watch_visitor_counter.each do |content_id, watch_count|
+          @watch_conversions[version] ||= {}
+          @watch_conversions[version][content_id] ||= 0
+          conversion = @watch_conversions[version][content_id]
+          conversion_rate = conversion * 1.0 / watch_count
+          watch_rate = watch_count * 1.0 / @total_visitors
+          improvement = conversion_rate * 1.0 / conversion_rate_total - 1
 
-        csv_data << [
-          content_id,
-          watch_count.to_s,
-          watch_rate.to_s,
-          conversion.to_s,
-          conversion_rate.to_s,
-          improvement.to_s
-        ]
+          csv_data << [
+            version,
+            content_id,
+            watch_count.to_s,
+            watch_rate.to_s,
+            conversion.to_s,
+            conversion_rate.to_s,
+            improvement.to_s
+          ]
+        end
       end
     end
   end
