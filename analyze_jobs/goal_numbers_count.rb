@@ -24,11 +24,10 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
     version = ""
     analyze session do |action|
       if !mark_landing and action["_type"] == "page_load"
-        unless front_porch? action
-          return false
+        if front_porch? action
+          mark_landing = true
+          version = extract_version action["pageurl"]
         end
-        mark_landing = true
-        version = extract_version action["pageurl"]
       end
       
       if conversion? action
@@ -59,16 +58,21 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
         "Conversion Rate"
       ]
       @visits.each do |version, visit_day_data|
-        visit_version_data.each do |weekday, visit_count|
-          @goal_count[weekday] ||= {}
-          @goal_count[weekday][version] ||= 0
-          conversion = @goal_count[weekday][version]
-          conversion_rate = conversion * 1.0 / visit_count
+        puts version
+        visit_total_count = 0
+        conversion = 0
+        visit_day_data.each do |weekday, visit_count|
+          @goal_count[version] ||= {}
+          @goal_count[version][weekday] ||= 0
+          visit_total_count += visit_count
+          conversion += @goal_count[version][weekday]
+          conversion_rate = conversion * 1.0 / visit_total_count
+          puts "con and visit: " + conversion.to_s + " " + visit_total_count.to_s
 
           csv_data << [
             weekday.to_s,
             version.to_s,
-            visit_count.to_s,
+            visit_total_count.to_s,
             conversion.to_s,
             conversion_rate.to_s
           ]
@@ -76,7 +80,6 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
       end
     end
   end
-
 end
 
 
