@@ -2,6 +2,7 @@ require './analyze_job'
 class ConversionOnLandingCountAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @total_landings = 0
     @total_conversions = 0
     @conversion_landing_counter = Hash.new

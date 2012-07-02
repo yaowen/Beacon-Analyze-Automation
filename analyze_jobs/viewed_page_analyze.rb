@@ -3,6 +3,7 @@ require 'date'
 class ViewedPageCountAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @visits = {}
     @page_view = {}
     @output_filename = "viewed_page"

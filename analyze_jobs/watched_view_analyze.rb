@@ -2,6 +2,7 @@ require './analyze_job'
 class WatchViewCountAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @watch_counts = []
     @goal_counts_after_watch = []
     @output_filename = "watch_view_count"

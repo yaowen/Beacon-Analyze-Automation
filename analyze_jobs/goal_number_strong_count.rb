@@ -3,6 +3,7 @@ require 'date'
 class GoalNumberStrongCountAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @visits = {}
     @goal_count = {}
     @output_filename = "goal_number"
@@ -13,13 +14,6 @@ class GoalNumberStrongCountAnalyzeJob < AnalyzeJob
     visit_time = DateTime.parse(session[0]["visit_time"])
     mark_landing = false
     mark_conversion = false
-
-    unless during?(
-      session[0]["visit_time"],
-      "2012-05-17 22:00:00 +0900",
-      "2012-05-22 11:00:00 +0900")
-      return
-    end
 
     version = ""
     analyze session do |action|

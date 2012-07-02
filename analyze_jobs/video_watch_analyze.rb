@@ -4,6 +4,7 @@ require 'net/http'
 class VideoWatchAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @cache_filepath = "cache/video_info.cache"
     init_video_data
 

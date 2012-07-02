@@ -2,6 +2,7 @@ require './analyze_job'
 class RawPageViewPathAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @pv_count = 0
     @output_filename = "raw_page_view_number.output"
     @result = ""

@@ -2,6 +2,7 @@ require './analyze_job'
 class VisitNumberCountAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @visit_count = 0
     @output_filename = "visit_number"
     @result = ""

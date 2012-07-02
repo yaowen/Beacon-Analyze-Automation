@@ -11,6 +11,9 @@ require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
 require './analyze_jobs/preview_watch_analyze'
 
+require './filters/action/time_filter'
+require './filters/session/time_filter'
+
 MAX_INTERVAL = 100
 
 #==> reading from specific files
@@ -23,8 +26,8 @@ ARGV.each do |command_param|
 end
 
 def validate_param key
-  puts $cmd_params
   while $cmd_params[key].nil?
+    puts $cmd_params
     puts "Missing #{key}, Please enter: "
     value = gets
     unless value.nil? || value == '\n'
@@ -42,6 +45,8 @@ end_date_str = $cmd_params["enddate"]
 input_path = $cmd_params["input"]
 output_path = $cmd_params["output"]
 
+puts "command parameters: #{$cmd_params}"
+
 
 #==> analyze job list
 $job_queue = [
@@ -58,20 +63,49 @@ $job_queue = [
   #ConversionOnLandingCountAnalyzeJob.new
 ]
 
-def analyze_json_file file
-  linecount = 0
-  lines = IO.readlines(file)
-  lines.each do |line|
-    linecount += 1
-    print("#{linecount}\r") if linecount % 1000 == 0
-    user_pattern_actions = JSON.parse(line)
-    #analyze jobs
-    $job_queue.each do |analyze_job|
-      analyze_job.analyze_session user_pattern_actions
-    end
+$common_filters = {
+  :timefilter => TimeSessionFilter.new
+}
+
+def filter_init params={}
+  #==> time filter
+  unless $common_filters[:timefilter].nil?
+    $common_filters[:timefilter].start_time = params[:start_date]
+    $common_filters[:timefilter].end_time = params[:end_date]
   end
 end
 
+def analyze_json_file file
+  linecount = 0
+  lines = IO.readlines(file)
+  puts "analyzing file: #{file}"
+  lines.each do |line|
+    linecount += 1
+    print("analyzeing line: #{linecount}\r") if linecount % 1000 == 0
+    user_pattern_actions = JSON.parse(line)
+    #analyze jobs
+    $job_queue.each do |analyze_job|
+      analyze_job.analyze_session_entry user_pattern_actions
+    end
+  end
+  puts
+end
+
+#==> Initialize Filters
+filter_params ||= {}
+filter_params[:start_date] = start_date_str
+filter_params[:end_date] = end_date_str
+filter_init filter_params
+
+#==> Initializing Jobqueues
+$job_queue.each do |analyze_job|
+  $common_filters.each do |filter_name, filter|
+    analyze_job.add_filter filter
+  end
+end
+
+
+#==> Start Analyzing
 MAX_INTERVAL.times do |i|
   start_date = DateTime.parse(start_date_str)
   end_date = DateTime.parse(end_date_str)
@@ -80,13 +114,14 @@ MAX_INTERVAL.times do |i|
     break
   end
   cur_date_str = cur_date.strftime("%Y%m%d")
-  puts cur_date_str
   analyze_json_file("#{input_path}/#{cur_date_str}.json")
 end
 
+
+#==> Start Output
 $job_queue.each do |analyze_job|
   analyze_job.output_result output_path
-  puts output_path
+  puts "output_path: #{output_path}"
   analyze_job.before_exit
 end
 exit

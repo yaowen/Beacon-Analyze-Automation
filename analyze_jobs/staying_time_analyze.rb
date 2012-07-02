@@ -2,6 +2,7 @@ require './analyze_job'
 class StayTimeAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @goal_count = 0
     @output_filename = "stay_time"
     @result = ""

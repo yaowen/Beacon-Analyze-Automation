@@ -2,6 +2,7 @@ require './analyze_job'
 class OSAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @os_count = {}
     @client_count = {}
     @goal_os_count = {}

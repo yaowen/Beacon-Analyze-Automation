@@ -4,6 +4,7 @@ require 'net/http'
 class PreviewWatchAnalyzeJob < AnalyzeJob
   
   def initialize
+    super
     @total_visitors = {}
     @total_conversions = {}
 

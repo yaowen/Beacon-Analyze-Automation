@@ -33,12 +33,6 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
 
   def analyze_session session
     marks = Set.new
-    unless during?(
-      session[0]["visit_time"], 
-      "2012-05-17 22:00:00 +0900", 
-      "2012-05-22 11:00:00 +0900")
-      return
-    end
     mark_landing = false
     version = ""
     analyze session do |action|
