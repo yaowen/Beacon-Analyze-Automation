@@ -37,3 +37,10 @@ def extract_version pageurl
   return pageurl
 end
   
+def extract_campaign pageurl
+  cmp = pageurl.scan(/(&|\?)cmp=(\d+)/)[0]
+  unless cmp.nil?
+    return cmp[1]
+  end
+  return "direct"
+end
