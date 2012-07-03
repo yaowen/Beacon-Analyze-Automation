@@ -11,6 +11,8 @@ require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
 require './analyze_jobs/preview_watch_analyze'
 
+require './specific_jobs/preview_watch_analyze'
+
 require './filters/action/time_filter'
 require './filters/session/time_filter'
 
@@ -56,11 +58,12 @@ $job_queue = [
   #VisitNumberCountAnalyzeJob.new,
   #PageViewCountAnalyzeJob.new,
   #OSAnalyzeJob.new,
-  VideoWatchAnalyzeJob.new,
+  #VideoWatchAnalyzeJob.new,
   #PreviewWatchAnalyzeJob.new,
-  SignupFunnelAnalyzeJob.new
+  #SignupFunnelAnalyzeJob.new,
   #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
+  PreviewWatchSpecificAnalyzeJob.new
 ]
 
 $common_filters = {
@@ -110,7 +113,7 @@ MAX_INTERVAL.times do |i|
   start_date = DateTime.parse(start_date_str)
   end_date = DateTime.parse(end_date_str)
   cur_date = start_date + i
-  if(cur_date > end_date)
+  if((cur_date - end_date) > 1)
     break
   end
   cur_date_str = cur_date.strftime("%Y%m%d")
