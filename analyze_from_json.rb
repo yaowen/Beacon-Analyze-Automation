@@ -12,6 +12,7 @@ require './analyze_jobs/conversion_on_landing'
 require './analyze_jobs/preview_watch_analyze'
 
 require './specific_jobs/preview_watch_analyze'
+require './specific_jobs/free_episode_and_walkthrough_viewed'
 
 require './filters/action/time_filter'
 require './filters/session/time_filter'
@@ -63,7 +64,8 @@ $job_queue = [
   #SignupFunnelAnalyzeJob.new,
   #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
-  PreviewWatchSpecificAnalyzeJob.new
+  #PreviewWatchSpecificAnalyzeJob.new
+  PreviewWatch_v2_SpecificAnalyzeJob.new
 ]
 
 $common_filters = {
