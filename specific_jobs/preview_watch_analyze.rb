@@ -23,18 +23,16 @@ class PreviewWatchSpecificAnalyzeJob < AnalyzeJob
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
-        unless front_porch? action
-          return
+        if front_porch? action
+          mark_landing = true
+          version = extract_version action["pageurl"] 
         end
-        mark_landing = true
-        version = extract_version action["pageurl"] 
       end
 
       if action["_type"] == "play_action"
         if action["client"] == "PlugIn" or action["client"] == "ActiveX" or action["client"] == "Panasonic"
           next
-        end
-        if action["packageid"] == "4" and action["contentid"] = "40034146" and mark_playstart
+        elsif action["packageid"] == "4" and action["contentid"] = "40034146" and mark_playstart
           watched_video_set.add "Walk Through Finish Load"
         end
       elsif action["_type"] == "slider_action"

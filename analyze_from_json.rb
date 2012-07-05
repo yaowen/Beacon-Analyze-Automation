@@ -56,7 +56,7 @@ $job_queue = [
   #GoalNumberCountAnalyzeJob.new,
   #WatchViewCountAnalyzeJob.new,
   #VisitNumberCountAnalyzeJob.new,
-  #PageViewCountAnalyzeJob.new,
+  #PageViewCountAnalyzeJob.new
   #OSAnalyzeJob.new,
   #VideoWatchAnalyzeJob.new,
   #PreviewWatchAnalyzeJob.new,
@@ -102,6 +102,7 @@ filter_init filter_params
 
 #==> Initializing Jobqueues
 $job_queue.each do |analyze_job|
+  analyze_job.output_dir = output_path
   $common_filters.each do |filter_name, filter|
     analyze_job.add_filter filter
   end
@@ -123,7 +124,7 @@ end
 
 #==> Start Output
 $job_queue.each do |analyze_job|
-  analyze_job.output_result output_path
+  analyze_job.output_result 
   puts "output_path: #{output_path}"
   analyze_job.before_exit
 end

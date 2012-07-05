@@ -5,6 +5,37 @@ class AnalyzeJob
     @filters = []
     @result = ""
     @csv = ""  #csv is a Dicionary
+
+    
+    @output_dir = ""
+    @normal_output_file = nil
+    @csv_output_file = nil
+  end
+
+  def get_normal_output_file
+    if @normal_output_file.nil?
+      write_path = @output_filename
+      if @output_dir.length > 0
+        write_path = @output_dir + "/" + @output_filename
+      end
+      @normal_output_file = File.open(write_path + ".output", 'w')
+    end
+    return @normal_output_file
+  end
+
+  def get_csv_output_file
+    if @csv_output_file.nil?
+      write_path = @output_filename
+      if @output_dir.length > 0
+        write_path = @output_dir + "/" + @output_filename
+      end
+      @csv_output_file = File.open(write_path + ".csv", 'w')
+    end
+    return @csv_output_file
+  end
+
+  def output_dir= parent_dir
+    @output_dir = parent_dir
   end
 
   # ==> methods derivation Has to implement
@@ -40,22 +71,26 @@ class AnalyzeJob
     @filters << filter
   end
 
-  def output_result parent_dir = ""
+  def flush
+    normal_output_file = get_normal_output_file
+    normal_output_file.puts @result
+
+    puts @csv
+    if @csv != ""
+      csv_output_file = get_csv_output_file
+      csv_output_file.puts @csv
+    end
+    @result = ""
+    @csv = ""
+  end
+
+  def output_result 
     #format the output string by calling the method output_format
     #which should be defined in each analyze job
     output_format
-    write_path = @output_filename
-    if parent_dir.length > 0
-      write_path = parent_dir + "/" + @output_filename
-    end
-    output_file = File.open(write_path + ".output", 'w')
-    output_file.puts @result
-    
     output_csv_format
-    if @csv != ""
-      output_file = File.open(write_path + ".csv", 'w')
-      output_file.puts @csv
-    end
+
+    flush
   end
 
   # ==> common logic for analyze
