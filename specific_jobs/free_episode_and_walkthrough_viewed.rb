@@ -21,6 +21,7 @@ class PreviewWatch_v2_SpecificAnalyzeJob < AnalyzeJob
     
     mark_landing = false
     mark_playstart = false
+    mark_homepage = false
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
@@ -31,21 +32,34 @@ class PreviewWatch_v2_SpecificAnalyzeJob < AnalyzeJob
       end
 
       if action["_type"] == "play_action"
+        if mark_playstart and action["packageid"] == "4" and action["contentid"] != "40034146"
+          mark_homepage = true
+          #puts "package_id: " + action["packageid"] + " " + action["contentid"] + " " + action["client"]
+        end
+        
         if action["client"] == "PlugIn" or action["client"] == "ActiveX" or action["client"] == "Panasonic"
+          #puts "IPad"
           next
-        elsif action["packageid"] == "4" and action["contentid"] = "40034146" and mark_playstart
+        elsif action["packageid"] == "4" and action["contentid"] == "40034146" and mark_playstart
+          #puts "Walk Through" if mark_homepage
           watched_video_set.add "Walk Through Finish Load"
           mark_playstart = false
-        elsif action["packageid"] == "4" and mark_playstart
-          watched_video_set.add "Homepage Preview(not walk through)"
+          mark_homepage = false
+        elsif mark_playstart
+          #puts "Home Preview Start "
+          watched_video_set.add "Homepage Preview Start"
           mark_playstart = false
         elsif action["packageid"] == "4" or action["packageid"] == "5" 
           watched_video_set.add "Free Episode and 90s"
+        else
+          #puts action["packageid"] + " " + action["contentid"]
         end
       elsif action["_type"] == "slider_action"
+        mark_playstart = true
         if action["contentid"] == "40034146"
-          mark_playstart = true
           watched_video_set.add "Walk Through Start"
+        else
+          watched_video_set.add "Homepage Preview Start"
         end
       elsif action["_type"] == "page_load"
         if conversion? action
