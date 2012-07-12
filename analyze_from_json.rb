@@ -13,6 +13,7 @@ require './analyze_jobs/preview_watch_analyze'
 
 require './specific_jobs/preview_watch_analyze'
 require './specific_jobs/free_episode_and_walkthrough_viewed'
+require './specific_jobs/load_to_start_duration'
 
 require './filters/action/time_filter'
 require './filters/session/time_filter'
@@ -65,7 +66,9 @@ $job_queue = [
   #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
   #PreviewWatchSpecificAnalyzeJob.new
-  PreviewWatch_v2_SpecificAnalyzeJob.new
+  #PreviewWatch_v2_SpecificAnalyzeJob.new
+  LoadToPlayDurationAnalyzeJob.new
+
 ]
 
 $common_filters = {
