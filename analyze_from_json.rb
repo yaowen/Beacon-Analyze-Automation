@@ -18,6 +18,8 @@ require './specific_jobs/load_to_start_duration'
 require './filters/action/time_filter'
 require './filters/session/time_filter'
 
+require './daily_reports/goal_numbers_count'
+
 MAX_INTERVAL = 100
 
 #==> reading from specific files
@@ -67,8 +69,12 @@ $job_queue = [
   #ConversionOnLandingCountAnalyzeJob.new
   #PreviewWatchSpecificAnalyzeJob.new
   #PreviewWatch_v2_SpecificAnalyzeJob.new
-  LoadToPlayDurationAnalyzeJob.new
+  #LoadToPlayDurationAnalyzeJob.new
+]
 
+#==> report list
+$report_queue = [
+  GoalNumberCountReport
 ]
 
 $common_filters = {
@@ -83,7 +89,21 @@ def filter_init params={}
   end
 end
 
-def analyze_json_file file
+def init_report_jobs report_date
+  report_job_queue = []
+  puts report_date
+  $report_queue.each do |daily_report_job_class|
+    puts daily_report_job_class
+    t_report_job = daily_report_job_class.new(report_date)
+    report_job_queue << t_report_job
+  end
+  return report_job_queue
+end
+
+#each file is aggregate by date
+def analyze_json_file file, cur_date
+  report_job_queue = init_report_jobs(cur_date)
+
   linecount = 0
   lines = IO.readlines(file)
   puts "analyzing file: #{file}"
@@ -95,8 +115,15 @@ def analyze_json_file file
     $job_queue.each do |analyze_job|
       analyze_job.analyze_session_entry user_pattern_actions
     end
+    report_job_queue.each do |daily_report_job|
+      daily_report_job.analyze_session_entry user_pattern_actions
+    end
   end
   puts
+
+  report_job_queue.each do |daily_report_job|
+    daily_report_job.output_result
+  end
 end
 
 #==> Initialize Filters
@@ -123,7 +150,7 @@ MAX_INTERVAL.times do |i|
     break
   end
   cur_date_str = cur_date.strftime("%Y%m%d")
-  analyze_json_file("#{input_path}/#{cur_date_str}.json")
+  analyze_json_file("#{input_path}/#{cur_date_str}.json", cur_date)
 end
 
 

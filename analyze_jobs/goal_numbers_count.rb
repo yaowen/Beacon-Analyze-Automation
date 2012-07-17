@@ -74,6 +74,7 @@ class GoalNumberCountAnalyzeJob < AnalyzeJob
       end
     end
   end
+
 end
 
 
