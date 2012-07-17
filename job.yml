@@ -21,6 +21,7 @@
       additional_fields: 
         - "pageurl" 
         - "contentid"
+        - "eventtype"
 
   jobs:
 

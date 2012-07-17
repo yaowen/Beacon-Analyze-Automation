@@ -9,11 +9,30 @@ class PageViewCountAnalyzeJob < AnalyzeJob
     @result = ""
   end
   # ==> methods derivation Has to implement
+  #
+  def filter_param url, param
+    param_part = url.scan(/(\?|&)(#{param}=.*?)(&|$)/)
+    if param_part.length == 0
+      return url
+    end
+    param_part = param_part[0][1]
+    index = url.index(param_part)
+    param_part = url[index-1] + param_part
+    url = url.gsub(param_part, "")
+    if url.length > index - 1
+      url[index-1] = '?'
+    end
+    return url
+  end
   def analyze_session session
     analyze session do |action|
       if action["_type"] == "page_load"
         pageurl = action["pageurl"]
         if !(pageurl =~ /^http\:\/\/www2\.hulu\.jp\/(\?.*)?$/).nil?
+          filter_params = ["utoken", "token", "info_id", "wapr", "docomo_code", "locale", "f2", "fb_xd_fragment"]
+          filter_params.each do |filter_parameter|
+            pageurl = filter_param pageurl, filter_parameter
+          end
           @pv_count += 1
           @pv_count_details[pageurl] ||= 0
           @pv_count_details[pageurl] += 1

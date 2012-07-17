@@ -22,7 +22,7 @@ file.each_line do |line|
     flag = true
     next
   end
-  if line =~ /^2012\t6\t20\t.*http\:\/\/www2\.hulu\.jp\/(\?.*)?\t.*/
+  if line =~ /^2012\t7\t11\t.*http\:\/\/www2\.hulu\.jp\/(\?.*)?\t.*/
     parts = line.split(/\t/)
     version = extract_version(parts[8])
     landing_page[version] ||= 0
