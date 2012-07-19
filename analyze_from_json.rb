@@ -6,6 +6,7 @@ require './analyze_jobs/visit_number_count'
 require './analyze_jobs/watched_view_analyze'
 require './analyze_jobs/os_analyze'
 require './analyze_jobs/video_watch_analyze'
+require './analyze_jobs/video_watch_regular_analyze'
 require './analyze_jobs/signup_funnel_analyze'
 require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
@@ -63,6 +64,7 @@ $job_queue = [
   #PageViewCountAnalyzeJob.new
   #OSAnalyzeJob.new,
   #VideoWatchAnalyzeJob.new,
+  VideoWatchRegularAnalyzeJob.new
   #PreviewWatchAnalyzeJob.new,
   #SignupFunnelAnalyzeJob.new,
   #LandingNormalStateAnalyzeJob.new
@@ -74,7 +76,7 @@ $job_queue = [
 
 #==> report list
 $report_queue = [
-  GoalNumberCountReport
+  #GoalNumberCountReport
 ]
 
 $common_filters = {
