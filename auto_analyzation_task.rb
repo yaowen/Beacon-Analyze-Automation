@@ -46,7 +46,7 @@ ARGV.each do |command_param|
   $cmd_params[key] = value
 end
 
-$start_date_str = $cmd_params["startdate"] || (DateTime.now - 1).strftime("%Y-%m-%d")
+$start_date_str = $cmd_params["startdate"] || (DateTime.now - 2).strftime("%Y-%m-%d")
 $end_date_str = $cmd_params["enddate"] || $start_date_str
 fetchdata = $cmd_params["fetchdata"] || "true"
 analyzedata = $cmd_params["analyzedata"] || "true"

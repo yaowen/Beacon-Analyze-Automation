@@ -1,6 +1,7 @@
 require './analyze_job'
 require 'set'
 require 'net/http'
+require 'cgi'
 class VideoWatchRegularAnalyzeJob < AnalyzeJob
   
   def initialize
@@ -71,15 +72,19 @@ class VideoWatchRegularAnalyzeJob < AnalyzeJob
     conversion_complete = false
     
     visit_date = DateTime.parse(session[0]["visit_time"])
-    visit_date_str = visit_date.strftime("%Y%m%d")
+    visit_date_str = visit_date.strftime("%Y/%m/%d")
     @visitors[visit_date_str] ||= 0
     @visitors[visit_date_str] += 1
     analyze session do |action|
       if action["_type"] == "play_action"
         show_type = action["packageid"] == "4" ? "free" : "90s"
         watched_video_set.add action["contentid"]  
-        puts action["contentid"]
-        watched_show_set.add(get_show_name(action["contentid"]) + "#" + show_type)
+        show_name = get_show_name(action["contentid"])
+        if(show_name.nil?)
+          next
+        end
+        show_name = CGI::unescapeHTML(show_name) #remove the "#" charactor
+        watched_show_set.add(show_name + "#" + show_type)
       elsif action["_type"] == "page_load" 
         if conversion? action
           conversion_complete = true
@@ -144,7 +149,11 @@ class VideoWatchRegularAnalyzeJob < AnalyzeJob
     video_type = body.scan(/<video-type>(.*?)<\/video-type>/)[0][0]
 
     if video_type == "episode"
-      show_name = body.scan(/<show>.*?<name>(.*?)<\/name>.*?<\/show>/)[0][0]
+      #show_name = body.scan(/<show>.*?<name>(.*?)<\/name>.*?<\/show>/)[0][0]
+      show_name = body.scan(/<show>.*?<canonical-name>(.*?)<\/canonical-name>.*?<\/show>/)[0][0]
+      if( show_name.include? "#" )
+        puts body
+      end
       season_number = body.scan(/<season-number.*?>(.*?)<\/season-number.*?>/)[0][0]
       episode_number = body.scan(/<episode-number.*?>(.*?)<\/episode-number.*?>/)[0][0]
       content = "#{show_name}-#{season_number}-#{episode_number}"
@@ -176,32 +185,39 @@ class VideoWatchRegularAnalyzeJob < AnalyzeJob
   def output_csv_format
     @csv = CSV.generate do |csv_data|
       @show_visitors.each do |visit_date_str, show_visitor_daily|
-        csv_data << [visit_date_str]
+        # ==> Value Part
+        show_conversion_daily = @show_conversions[visit_date_str] || {}
+        visitor_daily = @visitors[visit_date_str]
+        conversion_daily = @conversions[visit_date_str]
+        conversion_rate_total = conversion_daily * 1.0 / visitor_daily
+        csv_data << [visit_date_str + "(" + conversion_rate_total.to_s + ")"]
         csv_data << [
+          "Date",
           "ShowName",
+          "ShowType",
           "Watched Visitors",
           "Watched Rate",
           "Conversion",
           "Conversion Rate",
           "Improvement"
         ]
-        # ==> Value Part
-        show_conversion_daily = @show_conversions[visit_date_str] || {}
-        visitor_daily = @visitors[visit_date_str]
-        conversion_daily = @conversions[visit_date_str]
-        conversion_rate_total = conversion_daily * 1.0 / visitor_daily
         sorted_map = sort_by_conversion_rate show_visitor_daily, show_conversion_daily
         sorted_map.each do |content_id, count|
-          if count < 50 
+          if count < 30 
             next
           end
           conversion = show_conversion_daily[content_id] || {}
           conversion_rate = show_conversion_daily[content_id] * 1.0 / show_visitor_daily[content_id]
           watch_rate = count * 1.0 / visitor_daily
           improvement = conversion_rate * 1.0 / conversion_rate_total - 1 
+          content_name = content_id.split("#")[0]
+          content_type = content_id.split("#")[1]
+          
 
           csv_data << [
-            content_id,
+            visit_date_str,
+            content_name,
+            content_type,
             count.to_s,
             watch_rate.to_s,
             conversion.to_s,

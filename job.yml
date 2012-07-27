@@ -8,6 +8,7 @@
     - type_name: "page_load"
       additional_fields: 
         - "pageurl"
+        - "userid"
     - type_name: "play_action"
       additional_fields: 
         - "packageid"

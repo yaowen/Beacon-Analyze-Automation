@@ -7,7 +7,7 @@ end
 def conversion? action
   return false if action["_type"] != "page_load"
   pageurl = action["pageurl"]
-  return !(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/signup_complete(\?.*)?$/).nil?
+  return (!(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/signup_complete(\?.*)?$/).nil? and (action["userid"] != "0"))
 end
 
 def signup_start? action

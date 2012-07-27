@@ -8,6 +8,7 @@ class DailyReport
     @visit_date = visit_date
     @filters = []
     @daily_reports = []
+    puts "visit_date: " + visit_date.to_s
   end
 
 
