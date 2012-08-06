@@ -1,7 +1,7 @@
 require './analyze_job'
 require 'set'
 require 'net/http'
-class PreviewWatchAnalyzeJob < AnalyzeJob
+class WatchThroughRateAnalyzeJob < AnalyzeJob
   
   def initialize
     super
@@ -10,7 +10,7 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
 
     @watch_conversions = Hash.new
     @watch_visitors = Hash.new
-    @output_filename = "preview_watch"
+    @output_filename = "watch_through_rate"
     @result = ""
   end
   # ==> methods derivation Has to implement
@@ -22,17 +22,18 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
-        unless front_porch? action
-          return
+        if front_porch? action
+          mark_landing = true
+          version = extract_version action["pageurl"] 
         end
-        mark_landing = true
-        version = extract_version action["pageurl"] 
       end
 
       if action["_type"] == "slider_action"
         if action["pageurl"] =~ /^http:\/\/www2\.hulu\.jp\/?(\?.*)?$/
-          puts action["pageurl"]
           watched_video_set.add action["eventtype"]
+          if version == "origin" and action["eventtype"] == "startplay"
+            puts action["sitesessionid"]
+          end
         end
       elsif action["_type"] == "page_load" 
         if conversion? action
@@ -53,9 +54,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         @watch_conversions[version][content_id] += 1
       end 
     end
+    @total_visitors[version] ||= 0
+    @total_visitors[version] += 1
     watched_video_set.each do |content_id|
-      @total_visitors[version] ||= 0
-      @total_visitors[version] += 1
       @watch_visitors[version] ||= {}
       @watch_visitors[version][content_id] ||= 0
       @watch_visitors[version][content_id] += 1
@@ -84,7 +85,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         conversion_rate_total = @total_conversions[version] * 1.0 / @total_visitors[version]
         csv_data << [
           "Total Conversion Rate",
-          conversion_rate_total.to_s
+          conversion_rate_total.to_s,
+          "Total Visits",
+          @total_visitors[version]
         ]
         watch_visitor_counter.each do |content_id, watch_count|
           @watch_conversions[version] ||= {}

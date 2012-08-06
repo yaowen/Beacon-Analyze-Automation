@@ -22,11 +22,10 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
-        unless front_porch? action
-          return
+        if front_porch? action
+          mark_landing = true
+          version = extract_version action["pageurl"] 
         end
-        mark_landing = true
-        version = extract_version action["pageurl"] 
       end
 
       if action["_type"] == "play_action"
@@ -37,7 +36,6 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         end
       elsif action["_type"] == "slider_action"
         if action["pageurl"] =~ /^http:\/\/www2\.hulu\.jp\/?(\?.*)?$/
-          puts action["pageurl"]
           watched_video_set.add "Homepage Preview"
         end
       elsif action["_type"] == "page_load" 
@@ -59,9 +57,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         @watch_conversions[version][content_id] += 1
       end 
     end
+    @total_visitors[version] ||= 0
+    @total_visitors[version] += 1
     watched_video_set.each do |content_id|
-      @total_visitors[version] ||= 0
-      @total_visitors[version] += 1
       @watch_visitors[version] ||= {}
       @watch_visitors[version][content_id] ||= 0
       @watch_visitors[version][content_id] += 1

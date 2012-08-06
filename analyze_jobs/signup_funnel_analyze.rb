@@ -8,6 +8,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     @output_filename = "signup_funnel"
     @result = ""
     @total = 0
+    @total_visits = 0
   end
   # ==> methods derivation Has to implement
 
@@ -36,14 +37,15 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     mark_landing = false
     version = ""
     analyze session do |action|
-      if !mark_landing && action["_type"] == "page_load"
+      if !mark_landing and action["_type"] == "page_load"
+        @total_visits += 1
         if front_porch? action
           version = extract_version action["pageurl"]
           mark_landing = true
         end
       end
       if action["_type"] == "signup_action"
-        if action["field"] == "email"
+        if action["field"] == "email" and action["event"] = "valid"
           marks.add "email"
         elsif action["field"] == "continue_s2"
           marks.add "step1"
@@ -73,6 +75,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   end
 
   def output_format
+    puts "signup funnel total visits: #{@total_visits}"
 
     @states_counter.each do |key, state_counter|
       @result += "version: #{key}\n"

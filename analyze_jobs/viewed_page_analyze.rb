@@ -8,6 +8,7 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
     @page_view = {}
     @output_filename = "viewed_page"
     @result = ""
+    @total_visits = 0
   end
   # ==> methods derivation Has to implement
   def analyze_session session
@@ -17,17 +18,11 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
 
     viewed_pages = Set.new
 
-    unless during?(
-      session[0]["visit_time"],
-      "2012-05-17 22:00:00 +0900",
-      "2012-07-22 11:00:00 +0900")
-      return
-    end
-
     version = ""
     
     analyze session do |action|
       if !mark_landing and action["_type"] == "page_load"
+        @total_visits += 1
         if front_porch? action
           mark_landing = true
           version = extract_version action["pageurl"]
@@ -37,7 +32,6 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
       if action["_type"] == "page_load"
         if conversion? action
           mark_conversion = true
-          break
         else
           pageurl = action["pageurl"]
           pageurl = pageurl.split("?")[0]
@@ -56,12 +50,14 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
       @page_view[version][viewed_page] += 1
     end
 
+
     @visits[version] ||= 0 
     @visits[version] += 1
 
   end
 
   def output_format
+    puts "page_view total visits: #{@total_visits}"
   end
 
   def output_csv_format
