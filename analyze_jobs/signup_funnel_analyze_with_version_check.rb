@@ -1,14 +1,17 @@
 require './analyze_job'
 require 'set'
-class SignupFunnelAnalyzeJob < AnalyzeJob
+class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
   
   def initialize
     super
     @states_counter = Hash.new
     @output_filename = "signup_funnel"
+    @error_log = File.open("version_inconsist.log", "w")
+    @version_output = File.open("version_detail.log", "w")
     @result = ""
     @total = 0
     @total_visits = 0
+    @watch_count = 0 
   end
   # ==> methods derivation Has to implement
 
@@ -35,6 +38,9 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   def analyze_session session
     marks = Set.new
     mark_landing = false
+    mark_target = false
+    mark_watch = false
+    mark_inconsistency = false
     version = ""
     analyze session do |action|
       if !mark_landing and action["_type"] == "page_load"
@@ -43,7 +49,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           version = extract_version action["pageurl"]
           mark_landing = true
         else
-          return
+          return  
         end
       end
       if action["_type"] == "signup_action"
@@ -55,14 +61,45 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           marks.add "card"
         end
       elsif action["_type"] == "page_load"
+        if action["pageurl"].include? "201207252"
+          mark_target = true
+        end
         if front_porch? action
+          if version != extract_version(action["pageurl"])
+            mark_inconsistency = true
+          end
           marks.add "frontporch"
         elsif conversion? action
           marks.add "conversion"
         elsif signup_start? action
           marks.add "signup_start"
         end
+      elsif action["_type"] == "play_action" or action["_type"] == "slider_action"
+        mark_watch = true
       end
+
+    end
+
+    if mark_watch
+      if mark_landing
+        @watch_count += 1
+      end
+      #return
+    else
+      #return
+    end
+    
+    
+    if mark_target
+      @version_output.puts session[0]["sitesessionid"]
+      if mark_inconsistency
+        @error_log.puts session[0]["sitesessionid"]
+      elsif version != "201207252"
+        #puts "version: #{version} " + session[0]["sitesessionid"]
+      end
+    end
+    if mark_inconsistency
+      puts session.to_s
     end
 
     unless mark_landing
@@ -78,6 +115,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
 
   def output_format
     puts "signup funnel total visits: #{@total_visits}"
+    puts "watch_count #{@watch_count}"
 
     @states_counter.each do |key, state_counter|
       @result += "version: #{key}\n"

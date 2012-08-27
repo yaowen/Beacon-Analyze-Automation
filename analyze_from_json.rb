@@ -11,15 +11,20 @@ require './analyze_jobs/signup_funnel_analyze'
 require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
 require './analyze_jobs/preview_watch_analyze'
+require './analyze_jobs/signup_funnel_analyze_with_version_check'
 
 require './specific_jobs/preview_watch_analyze'
 require './specific_jobs/free_episode_and_walkthrough_viewed'
 require './specific_jobs/load_to_start_duration'
+require './specific_jobs/easy_goal_count'
+require './specific_jobs/landing_fp_view_count'
+require './specific_jobs/list_all_visitors'
 
 require './filters/action/time_filter'
 require './filters/session/time_filter'
 
 require './daily_reports/goal_numbers_count'
+
 
 MAX_INTERVAL = 100
 
@@ -63,15 +68,19 @@ $job_queue = [
   #VisitNumberCountAnalyzeJob.new,
   #PageViewCountAnalyzeJob.new
   #OSAnalyzeJob.new,
-  #VideoWatchAnalyzeJob.new,
-  VideoWatchRegularAnalyzeJob.new
+  #VideoWatchAnalyzeJob.new
+  #VideoWatchRegularAnalyzeJob.new
   #PreviewWatchAnalyzeJob.new,
-  #SignupFunnelAnalyzeJob.new,
+  #SignupFunnelAnalyzeJob.new
   #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
   #PreviewWatchSpecificAnalyzeJob.new
+  #PageViewSpecificCountAnalyzeJob.new
   #PreviewWatch_v2_SpecificAnalyzeJob.new
   #LoadToPlayDurationAnalyzeJob.new
+  #SignupFunnelWithVersionCheckAnalyzeJob.new
+  ListAllVisitorsJob.new
+  #EasyGoalCount.new
 ]
 
 #==> report list
@@ -152,7 +161,10 @@ MAX_INTERVAL.times do |i|
     break
   end
   cur_date_str = cur_date.strftime("%Y%m%d")
-  analyze_json_file("#{input_path}/#{cur_date_str}.json", cur_date)
+  file_path = "#{input_path}/#{cur_date_str}.json"
+  if File.exist? file_path
+    analyze_json_file(file_path, cur_date)
+  end
 end
 
 

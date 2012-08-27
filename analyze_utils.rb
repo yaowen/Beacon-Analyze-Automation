@@ -25,7 +25,7 @@ def during? target_time, start_date, end_date
 end
 
 def extract_version pageurl
-  version = pageurl.scan(/\?ver=(\d+)/)[0]
+  version = pageurl.scan(/[\?|&]ver=(\d+)/)[0]
   unless version.nil?
     return version[0]
   end

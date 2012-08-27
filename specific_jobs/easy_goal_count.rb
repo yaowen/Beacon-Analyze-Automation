@@ -36,18 +36,17 @@ class EasyGoalCount < AnalyzeJob
 
 
   def analyze_session session
-    #puts session
     mark_conversion = false
     userid = ""
     analyze session do |action|
       if action["_type"] == "page_load"
   
-        if action.pageurl =~ /signup_complete_mobile/  and action["userid"] != "0"
+        if (action["pageurl"] =~ /signup_complete/  and action["userid"] != "0") || action["pageurl"]=~ /signup_complete_mobile/
           utoken = extract_param action["pageurl"], "utoken"
           userid = get_user_from_plus_token(utoken)
             
           @goal_sessions.add action["sitesessionid"]
-          @userids.add userid
+          @userids.add [userid, action["sitesessionid"]]
         end
       end
     end
@@ -63,9 +62,10 @@ class EasyGoalCount < AnalyzeJob
   end
 
   def output_format
-    @result += "#{@goal_sessions.length}\n"
-    @userids.each do |userid|
-      @result += "#{userid}\n"
+    puts "#######################"
+    #@result += "#{@goal_sessions.length}\n"
+    @userids.each do |data|
+      @result += "#{data[0]}\n"
     end
   end
 end
