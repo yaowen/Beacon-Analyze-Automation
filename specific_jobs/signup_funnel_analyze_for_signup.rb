@@ -1,6 +1,6 @@
 require './analyze_job'
 require 'set'
-class SignupFunnelAnalyzeJob < AnalyzeJob
+class SignupFunnelAnalyzeJobForSignup < AnalyzeJob
   
   def initialize
     super
@@ -37,10 +37,19 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     mark_landing = false
     version = ""
     analyze session do |action|
+      #if action["client"] =~ /Explorer [67].*$/
+      #  return 
+      #end
       if !mark_landing and action["_type"] == "page_load"
         @total_visits += 1
-        if front_porch?(action)
-          version = extract_version action["pageurl"]
+        if action["pageurl"] =~ /secure\.hulu\.jp\/((signup)|(jpsignup))(\?.*)?$/
+          if action["pageurl"] =~ /secure\.hulu.jp\/jpsignup(\?.*ab=2.*)/
+            version = 2
+          elsif action["pageurl"] =~ /secure\.hulu.jp\/jpsignup(\?.*)?/
+            version = 3
+          elsif action["pageurl"] =~ /secure\.hulu\.jp\/signup(\?.*)?/
+            version = 1
+          end
           mark_landing = true
         end
       end
@@ -61,13 +70,17 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           marks.add "card"
         end
       elsif action["_type"] == "page_load"
-        if front_porch? action
-          marks.add "frontporch"
-        elsif conversion? action
-          marks.add "conversion"
-        elsif signup_start? action
+        #puts action["pageurl"]
+        if action["pageurl"] =~ /secure\.hulu\.jp\/((signup)|(jpsignup))(\?.*)?$/
           marks.add "signup_start"
+        elsif conversion? action
+          puts action["pageurl"]
+          marks.add "conversion"
         end
+        #if !(action["pageurl"] =~ /^https?:\/\/secure\.hulu\.jp\/((signup_complete)|(thanks))(\?.*)?$/).nil? and action["userid"] != 0
+        #if conversion? action
+        #  puts action["pageurl"]
+        #end
       end
     end
 
@@ -87,7 +100,6 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
 
     @states_counter.each do |key, state_counter|
       @result += "version: #{key}\n"
-      @result += "Landing: #{state_counter["frontporch"]}\n"
       @result += "Signup Start: #{state_counter["signup_start"]}\n"
       @result += "Input Email: #{state_counter["email"]}\n"
       @result += "Step1 Complete: #{state_counter["step1"]}\n"
@@ -100,13 +112,11 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     @csv = CSV.generate do |csv_data|
       csv_data << [
         "Version",
-        "Landing", 
         "Signup Start", 
         "Input Email", 
         "Step1 Complete",
         "Input CC", 
         "Conversion",
-        "Landing->Signup Start",
         "Signup Start->Input Email",
         "Input Email->Step1 Complete",
         "Step1 Complete->Input CC",
@@ -118,32 +128,30 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
         # ==> Head Part
 
         need_mark = true
-        fps = ["frontporch", "signup_start", "email", "step1", "card", "conversion"]
+        fps = ["signup_start", "email", "step1", "card", "conversion"]
         puts key
 	fps.each do |fp|
           need_mark = false if state_counter[fp] < 10
           puts need_mark
         end
-        next unless need_mark
+        #next unless need_mark
        
 
         # ==> Value Part
         csv_data << [
           key,
-          state_counter["frontporch"],
           state_counter["signup_start"],
           state_counter["email"],
           state_counter["step1"],
           state_counter["card"],
           state_counter["conversion"],
-          format("%.2f%", state_counter["signup_start"] * 100.0 / state_counter["frontporch"]),
           format("%.2f%", state_counter["email"] * 100.0 / state_counter["signup_start"]),
           format("%.2f%", state_counter["step1"] * 100.0 / state_counter["email"]),
           format("%.2f%", state_counter["card"] * 100.0 / state_counter["step1"]),
           format("%.2f%", state_counter["conversion"] * 100.0 / state_counter["card"]),
  
-          format("%.2f%", state_counter["step1"] * 100.0 / state_counter["frontporch"]),
-          format("%.2f%", state_counter["conversion"] * 100.0 / state_counter["frontporch"])
+          format("%.2f%", state_counter["step1"] * 100.0 / state_counter["signup_start"]),
+          format("%.2f%", state_counter["conversion"] * 100.0 / state_counter["signup_start"])
         ]
       end
     end

@@ -1,18 +1,5 @@
 require 'json'
 require './analyze_utils'
-require './analyze_jobs/goal_numbers_count'
-require './analyze_jobs/page_view_count'
-require './analyze_jobs/visit_number_count'
-require './analyze_jobs/watched_view_analyze'
-require './analyze_jobs/os_analyze'
-require './analyze_jobs/video_watch_analyze'
-require './analyze_jobs/video_watch_regular_analyze'
-require './analyze_jobs/signup_funnel_analyze'
-require './analyze_jobs/landing_normal_state_analyze'
-require './analyze_jobs/conversion_on_landing'
-require './analyze_jobs/preview_watch_analyze'
-require './analyze_jobs/signup_funnel_analyze_with_version_check'
-require './analyze_jobs/viewed_page_analyze'
 
 require './specific_jobs/preview_watch_analyze'
 require './specific_jobs/free_episode_and_walkthrough_viewed'
@@ -20,8 +7,6 @@ require './specific_jobs/load_to_start_duration'
 require './specific_jobs/easy_goal_count'
 require './specific_jobs/landing_fp_view_count'
 require './specific_jobs/list_all_visitors'
-require './specific_jobs/use_set_count_conversions'
-require './specific_jobs/signup_funnel_analyze_for_signup'
 
 require './filters/action/time_filter'
 require './filters/session/time_filter'
@@ -74,7 +59,6 @@ $job_queue = [
   #VideoWatchAnalyzeJob.new
   #VideoWatchRegularAnalyzeJob.new
   #PreviewWatchAnalyzeJob.new,
-  #ViewedPageCountAnalyzeJob.new,
   #SignupFunnelAnalyzeJob.new
   #LandingNormalStateAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
@@ -83,10 +67,8 @@ $job_queue = [
   #PreviewWatch_v2_SpecificAnalyzeJob.new
   #LoadToPlayDurationAnalyzeJob.new
   #SignupFunnelWithVersionCheckAnalyzeJob.new
-  #ListAllVisitorsJob.new
+  ListAllVisitorsJob.new
   #EasyGoalCount.new
-  #SetCountConversionJob.new
-  SignupFunnelAnalyzeJobForSignup.new
 ]
 
 #==> report list

@@ -34,6 +34,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
         elsif action["packageid"] == "5"
           watched_video_set.add "90s"
         end
+        if action["contentid"] == "40034146"
+          watched_video_set.add "Intro Video"
+        end
       elsif action["_type"] == "slider_action"
         if action["pageurl"] =~ /^http:\/\/www2\.hulu\.jp\/?(\?.*)?$/
           watched_video_set.add "Homepage Preview"
@@ -90,10 +93,12 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
           "Total Conversion Rate",
           conversion_rate_total.to_s
         ]
-        watch_visitor_counter.each do |content_id, watch_count|
+        preview_types = ["Homepage Preview", "90s", "Free Episode", "Intro Video"]
+        preview_types.each do |content_id|
+          watch_count = watch_visitor_counter[content_id] || 0
           @watch_conversions[version] ||= {}
           @watch_conversions[version][content_id] ||= 0
-          conversion = @watch_conversions[version][content_id]
+          conversion = @watch_conversions[version][content_id] || 0
           conversion_rate = conversion * 1.0 / watch_count
           watch_rate = watch_count * 1.0 / @total_visitors[version]
           improvement = conversion_rate * 1.0 / conversion_rate_total - 1

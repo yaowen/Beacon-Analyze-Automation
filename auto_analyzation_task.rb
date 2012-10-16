@@ -183,8 +183,3 @@ if "true" == analyzedata
 end
 
 
-
-
-
-
-

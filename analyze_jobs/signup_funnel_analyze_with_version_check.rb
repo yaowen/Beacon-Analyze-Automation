@@ -8,10 +8,23 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
     @output_filename = "signup_funnel"
     @error_log = File.open("version_inconsist.log", "w")
     @version_output = File.open("version_detail.log", "w")
+    
+    @old_users = Set.new
+    listing_input = File.open("listing.input", "r")
+    listing_input.each do |cid|
+      @old_users.add cid.gsub("\"", "").gsub("\n", "")
+    end
+    @new_users = {}
+
     @result = ""
     @total = 0
     @total_visits = 0
     @watch_count = 0 
+    @return_uids = {}
+    @return_users = {}
+    @old_visitors = {}
+    @old_visitors_conversion = {}
+    @inconsistency_sessions = {}
   end
   # ==> methods derivation Has to implement
 
@@ -41,15 +54,39 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
     mark_target = false
     mark_watch = false
     mark_inconsistency = false
+    mark_return = false
     version = ""
+    #if @old_users.include? session[0]["computerguid"] 
+    #  analyze session do |action|
+    #    if action["_type"] == "page_load" && front_porch?(action)
+    #      version = extract_version action["pageurl"]
+    #      @old_visitors[version] ||= 0 
+    #      @old_visitors[version] += 1
+    #    elsif action["_type"] == "page_load" && conversion?(action)
+    #      @old_visitors_conversion[version] ||= 0
+    #      @old_visitors_conversion[version] += 1
+    #    end
+    #  end
+    #  return
+    #end
     analyze session do |action|
       if !mark_landing and action["_type"] == "page_load"
         @total_visits += 1
         if front_porch? action
           version = extract_version action["pageurl"]
+          abtest_id = action["abtestid"]
+          @new_users[version] ||= Set.new
+          if @new_users[version].include? action["computerguid"]
+            @return_uids[version] ||= Set.new
+            @return_uids[version].add action["computerguid"]
+            @return_users[version] ||= 0
+            @return_users[version] += 1
+            return
+          end
+          @new_users[version].add action["computerguid"]
           mark_landing = true
         else
-          return  
+          #return
         end
       end
       if action["_type"] == "signup_action"
@@ -66,6 +103,7 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
         end
         if front_porch? action
           if version != extract_version(action["pageurl"])
+            puts "#{version} ## #{extract_version(action["pageurl"])}"
             mark_inconsistency = true
           end
           marks.add "frontporch"
@@ -77,7 +115,6 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
       elsif action["_type"] == "play_action" or action["_type"] == "slider_action"
         mark_watch = true
       end
-
     end
 
     if mark_watch
@@ -98,11 +135,15 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
         #puts "version: #{version} " + session[0]["sitesessionid"]
       end
     end
-    if mark_inconsistency
-      puts session.to_s
-    end
 
     unless mark_landing
+      return
+    end
+
+    if mark_inconsistency
+      puts pretty_session_form session
+      @inconsistency_sessions[version] ||= 0
+      @inconsistency_sessions[version] += 1
       return
     end
 
@@ -116,6 +157,32 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
   def output_format
     puts "signup funnel total visits: #{@total_visits}"
     puts "watch_count #{@watch_count}"
+    #@old_visitors.each do |version, count|
+    #  @old_visitors_conversion[version] ||= 0
+    #  puts "#{version} ## #{count} ## #{@old_visitors_conversion[version]}"
+    #end
+    puts "##########################"
+    @new_users.each do |version, uidset|
+      puts "#{version} ## #{uidset.length} }"
+    end
+    puts "##########################"
+    @return_users.each do |version, count|
+      puts "#{version} ## #{count} }"
+    end
+    puts "##########################"
+    @inconsistency_sessions.each do |version, count|
+      unless @states_counter[version].nil?
+        puts "#{version} ## #{count} ## #{count * 1.0 / @states_counter[version]["frontporch"]}"
+      end
+    end
+    @return_uids.each do |version, uidset|
+      if uidset.length > 100
+        return_uid_output = File.new("return_uid#{version}.output", "w")
+        uidset.each do |uid|
+          return_uid_output.puts uid
+        end
+      end
+    end
 
     @states_counter.each do |key, state_counter|
       @result += "version: #{key}\n"
@@ -149,7 +216,8 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
           state_counter["email"],
           state_counter["step1"],
           state_counter["card"],
-          state_counter["conversion"]
+          state_counter["conversion"],
+          format("%.2f", state_counter["conversion"] * 100.0 / state_counter["frontporch"])
         ]
       end
     end

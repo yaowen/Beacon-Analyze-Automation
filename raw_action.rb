@@ -53,8 +53,8 @@ class RawAction
     hour = parseInt(timeofday_parts[0])
     minute = parseInt(timeofday_parts[1])
     second = parseInt(timeofday_parts[2])
-    complete_time = Time.new(year,month,day,hour,minute,second, "+09:00")
-    complete_time += 9 * 60 * 60
+    complete_time = Time.new(year,month,day,hour,minute,second, "+00:00")
+    #complete_time += 9 * 60 * 60
   end
 
   def date_str 

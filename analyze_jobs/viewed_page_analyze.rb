@@ -43,6 +43,7 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
     unless mark_landing
       return
     end
+    
 
     viewed_pages.each do |viewed_page|
       @page_view[version] ||= {}

@@ -7,7 +7,7 @@ end
 def conversion? action
   return false if action["_type"] != "page_load"
   pageurl = action["pageurl"]
-  return (!(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/signup_complete(\?.*)?$/).nil? and (action["userid"] != "0"))
+  return (!(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/((signup_complete)|(thanks))(\?.*)?$/).nil? and (action["userid"] != "0"))
 end
 
 def signup_start? action
@@ -27,6 +27,7 @@ end
 def extract_version pageurl
   version = pageurl.scan(/[\?|&]ver=(\d+)/)[0]
   unless version.nil?
+    return "origin" if version[0] == "201205153"
     return version[0]
   end
   if pageurl =~ /^http\:\/\/www2\.hulu\.jp\/(\?.*)?$/
@@ -35,6 +36,15 @@ def extract_version pageurl
   pageurl = pageurl.split("?")[0]
   pageurl = pageurl.split("/")[-1]
   return pageurl
+end
+
+def pretty_session_form session
+  result = ""
+  result += "#{session[0]["client"]} #{session[0]["sitesessionid"]} #{session[0]["computerguid"]}\t"
+  session.each do |action|
+    result += "[#{action["visit_time"]}]: #{action["pageurl"]} --> " if action["_type"] == "page_load"
+  end
+  return result
 end
   
 def extract_campaign pageurl
