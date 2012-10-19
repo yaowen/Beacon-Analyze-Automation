@@ -22,6 +22,7 @@ require './specific_jobs/landing_fp_view_count'
 require './specific_jobs/list_all_visitors'
 require './specific_jobs/use_set_count_conversions'
 require './specific_jobs/signup_funnel_analyze_for_signup'
+require './specific_jobs/stay_duration_on_page'
 
 require './filters/action/time_filter'
 require './filters/session/time_filter'
@@ -86,7 +87,8 @@ $job_queue = [
   #ListAllVisitorsJob.new
   #EasyGoalCount.new
   #SetCountConversionJob.new
-  SignupFunnelAnalyzeJobForSignup.new
+  #SignupFunnelAnalyzeJobForSignup.new
+  StayDurationOnPage.new
 ]
 
 #==> report list
