@@ -13,7 +13,7 @@ end
 def signup_start? action
   return false if action["_type"] != "page_load"
   pageurl = action["pageurl"]
-  return !(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/(signup|asignup_s1)(\?.*)?$/).nil?
+  return !(pageurl =~ /^https?:\/\/secure\.hulu\.jp\/(signup|asignup_s1|signup2)(\?.*)?$/).nil?
 end
 
 def watch_video? action
@@ -27,7 +27,7 @@ end
 def extract_version pageurl
   version = pageurl.scan(/[\?|&]ver=(\d+)/)[0]
   unless version.nil?
-    return "origin" if version[0] == "201205153"
+    return "origin" if version[0] == "201210182"
     return version[0]
   end
   if pageurl =~ /^http\:\/\/www2\.hulu\.jp\/(\?.*)?$/

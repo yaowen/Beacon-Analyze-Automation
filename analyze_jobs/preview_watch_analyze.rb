@@ -12,22 +12,41 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     @watch_visitors = Hash.new
     @output_filename = "preview_watch"
     @result = ""
+    listing_sids_file = File.open("visitors.output", "r")
+    @listing_sids = Set.new
+    listing_sids_file.each_line do |line|
+      @listing_sids << line.gsub("\n", "")
+    end
+    @used_to = {}
   end
+
+  def add_one counter, field, guid 
+    key = counter.object_id.to_s + field.to_s
+    @used_to[key] ||= Set.new
+    return if @used_to[key].include? guid 
+    counter[field] ||= 0
+    counter[field] += 1
+    @used_to[key] << guid
+  end
+
   # ==> methods derivation Has to implement
   def analyze_session session
     watched_video_set = Set.new
     conversion_complete = false
     
     mark_landing = false
+    return if @listing_sids.include? session[0]["computerguid"]
     version = ""
     analyze session do |action|
       if !mark_landing && action["_type"] == "page_load"
         if front_porch? action
           mark_landing = true
+          abtest_id = action["abtestid"]
+          return unless abtest_id = "20121105"
           version = extract_version action["pageurl"] 
         end
       end
-
+=begin
       if action["_type"] == "play_action"
         if action["packageid"] == "4"
           watched_video_set.add "Free Episode"
@@ -46,35 +65,38 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
           conversion_complete = true
         end
       end
+=end
     end
 
     unless mark_landing
       return
     end
+=begin
+    @watch_conversions[version] ||= {}
     if conversion_complete
-      @total_conversions[version] ||= 0
-      @total_conversions[version] += 1
+      add_one @total_conversions, version, session[0]["computerguid"]
       watched_video_set.each do |content_id|
-        @watch_conversions[version] ||= {}
-        @watch_conversions[version][content_id] ||= 0
-        @watch_conversions[version][content_id] += 1
+        add_one @watch_conversions[version], content_id, session[0]["computerguid"]
       end 
     end
-    @total_visitors[version] ||= 0
-    @total_visitors[version] += 1
+=end
+    add_one @total_visitors, version, session[0]["computerguid"]
+=begin
+    @watch_visitors[version] ||= {}
     watched_video_set.each do |content_id|
-      @watch_visitors[version] ||= {}
-      @watch_visitors[version][content_id] ||= 0
-      @watch_visitors[version][content_id] += 1
+      add_one @watch_visitors[version], content_id, session[0]["computerguid"]
     end 
+=end
   end
 
   def output_format
-    @result = ""
+    puts "Total Visitors: #{@total_visitors}"
+    #@result = @total_visitors
     return
   end
 
   def output_csv_format
+    return
     @csv = CSV.generate do |csv_data|
       csv_data << [
         "Version",
@@ -88,10 +110,13 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
       ]
       @watch_visitors.each do |version, watch_visitor_counter|
         @total_conversions[version] ||= 0
+        next if @total_conversions[version] < 20
         conversion_rate_total = @total_conversions[version] * 1.0 / @total_visitors[version]
         csv_data << [
           "Total Conversion Rate",
-          conversion_rate_total.to_s
+          conversion_rate_total.to_s,
+          "Total Visitors",
+          @total_visitors[version]
         ]
         preview_types = ["Homepage Preview", "90s", "Free Episode", "Intro Video"]
         preview_types.each do |content_id|
@@ -99,19 +124,20 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
           @watch_conversions[version] ||= {}
           @watch_conversions[version][content_id] ||= 0
           conversion = @watch_conversions[version][content_id] || 0
+          next if conversion == 0
           conversion_rate = conversion * 1.0 / watch_count
           watch_rate = watch_count * 1.0 / @total_visitors[version]
           improvement = conversion_rate * 1.0 / conversion_rate_total - 1
-
+             
           csv_data << [
             version,
             content_id,
             watch_count.to_s,
-            watch_rate.to_s,
+            format("%.2f%", watch_rate),
             conversion.to_s,
-            conversion_rate.to_s,
-            improvement.to_s,
-            conversion_rate_total.to_s
+            format("%.2f%", conversion_rate),
+            format("%.2f%", improvement),
+            format("%.2f%", conversion_rate_total)
           ]
         end
       end

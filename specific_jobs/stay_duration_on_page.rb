@@ -6,6 +6,7 @@ class StayDurationOnPage < AnalyzeJob
   def initialize
     super
     @states_counter = {}
+    @total_visitors = {}
     @output_filename = "stay_time_distribute"
     @result = ""
   end
@@ -57,23 +58,26 @@ class StayDurationOnPage < AnalyzeJob
 
     watch_video_tag = mark_watch_video ? "w" : "nw"
 
-    need_versions = ["origin", "201208073", "201208144", "201208312"]
+    need_versions = ["origin", "201208073", "201208144", "201208222", "201208312"]
     unless need_versions.include? version
       return
     end
 
+    @total_visitors[version] ||= {}
+    @total_visitors[version][watch_video_tag] ||= 0
     if (during > 0 && during <= 6000) 
+      @total_visitors[version][watch_video_tag] += 1
       if @states_counter[version].nil?
         @states_counter[version] = {}
         @states_counter[version]["w"] = {}
         @states_counter[version]["nw"] = {}
         @states_counter[version].each do |watch_tag, watch_tag_counter|
-          100.times do |i|
+          6000.times do |i|
             watch_tag_counter[i] = 0
           end
         end
       end
-      @states_counter[version][watch_video_tag][during/60] += 1
+      @states_counter[version][watch_video_tag][during] += 1
     elsif during > 0
       puts during
     end
@@ -86,14 +90,30 @@ class StayDurationOnPage < AnalyzeJob
     @csv = CSV.generate do |csv_data|
       @states_counter.each do |version, watch_tag_counter|
         watch_tag_counter.each do |watch_tag, distribute|
-          100.times do |i|
-            csv_data << [
-              version,
-              watch_tag,
-              i,
-              distribute[i]
-            ]
+          total_time = 0
+          total_users = 0
+          temp_users = 0
+          temp_users_2 = 0
+          6000.times do |i|
+            total_time = total_time + (i+1) * distribute[i]
+            total_users = total_users + distribute[i]
+            temp_users = temp_users + distribute[i]
+            temp_users_2 = temp_users_2 + distribute[i] if i < 360
+            if( i % 10 == 9 && i < 360) 
+              csv_data << [temp_users]
+              temp_users = 0
+            end
+            #if( i < 20) 
+            #  csv_data << [
+            #    version,
+            #    watch_tag,
+            #    i,
+            #    distribute[i]
+            #  ]
+            #end
           end
+          csv_data << [@total_visitors[version][watch_tag] - temp_users_2]
+          csv_data << [version, watch_tag, "avg", total_time * 1.0 / total_users, temp_users_2 * 1.0 / @total_visitors[version][watch_tag]]
         end
       end
     end

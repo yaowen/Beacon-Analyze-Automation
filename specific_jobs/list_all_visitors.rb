@@ -5,12 +5,14 @@ class ListAllVisitorsJob < AnalyzeJob
     super
     @visitor_ids = Set.new
     @output_filename = "visitor_id_list"
-    @temp_file = File.open("visitors.ouptut", "w")
+    @temp_file = File.open("visitors.output", "w")
+=begin
     listing_sids_file = File.open("listing.input", "r")
     @listing_sids = Set.new
     listing_sids_file.each do |sid|
       @listing_sids.add sid.gsub("\n", "").gsub("\"", "")
     end
+=end
     @version_distribute = {}
     @inconsistency_count = 0
     @session_detail_file = File.new("session_detail.output", "w")
@@ -19,9 +21,11 @@ class ListAllVisitorsJob < AnalyzeJob
   #
   def analyze_session session
     @visitor_ids.add session[0]["computerguid"]
+=begin
     unless (@listing_sids.include? session[0]["computerguid"])
       return
     end
+=end
     @session_detail_file.puts pretty_session_form(session)
     mark_landing = false
     mark_inconsistency = false

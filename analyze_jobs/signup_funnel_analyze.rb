@@ -9,6 +9,17 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     @result = ""
     @total = 0
     @total_visits = 0
+    @new_users = {}
+    @return_uids = {}
+    @return_users = {}
+    @total_visitors = {}
+    @used_to = {}
+    listing_sids_file = File.open("visitors.output", "r")
+    @listing_sids = Set.new
+    listing_sids_file.each_line do |line|
+      @listing_sids << line.gsub("\n", "")
+    end
+    puts @listing_sids.length
   end
   # ==> methods derivation Has to implement
 
@@ -18,9 +29,13 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
     end
   end
 
-  def add_one counter, field
+  def add_one counter, field, guid
+    key = counter.object_id.to_s + field.to_s
+    @used_to[key] ||= Set.new
+    return if @used_to[key].include? guid 
     counter[field] ||= 0
     counter[field] += 1
+    @used_to[key] << guid
   end
 
   def formalize
@@ -35,13 +50,28 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   def analyze_session session
     marks = Set.new
     mark_landing = false
+    mark_return_user = false
+    return if @listing_sids.include? session[0]["computerguid"]
     version = ""
     analyze session do |action|
-      if !mark_landing and action["_type"] == "page_load"
-        @total_visits += 1
-        if front_porch?(action)
-          version = extract_version action["pageurl"]
+      if !mark_landing && action["_type"] == "page_load"
+        #@total_visits += 1
+        if front_porch? action 
           mark_landing = true
+          abtest_id = action["abtestid"]
+          return unless abtest_id == "20121105"
+          version = extract_version action["pageurl"]
+=begin
+          @new_users[version] ||= Set.new
+          if @new_users[version].include? action["computerguid"]
+            @return_uids[version] ||= Set.new
+            @return_uids[version].add action["computerguid"]
+            @return_users[version] ||= 0
+            @return_users[version] += 1
+            mark_return_user = true
+          end
+          @new_users[version].add action["computerguid"]
+=end
         end
       end
       #if action["_type"] == "page_load" && action["pageurl"] =~ /.*promo\/.*/
@@ -52,6 +82,8 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
       #  puts action["pageurl"]
       #  return
       #end
+
+=begin
       if action["_type"] == "signup_action"
         if action["field"] == "email" and action["event"] = "valid"
           marks.add "email"
@@ -61,7 +93,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           marks.add "card"
         end
       elsif action["_type"] == "page_load"
-        if front_porch? action
+        if front_porch?(action) #&& !mark_return_user
           marks.add "frontporch"
         elsif conversion? action
           marks.add "conversion"
@@ -69,20 +101,27 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
           marks.add "signup_start"
         end
       end
+=end
     end
 
     unless mark_landing
       return
     end
 
+    add_one @total_visitors, version, session[0]["computerguid"]
+
+=begin
     @states_counter[version] ||= {}
     marks.each do |mark|
-      add_one @states_counter[version], mark
+      add_one @states_counter[version], mark, session[0]["computerguid"]
     end
     formalize
+=end
   end
 
   def output_format
+    puts "SF Total Visitors: #{@total_visitors}"
+    return
     puts "signup funnel total visits: #{@total_visits}"
 
     @states_counter.each do |key, state_counter|
@@ -97,6 +136,7 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
   end
 
   def output_csv_format
+    return
     @csv = CSV.generate do |csv_data|
       csv_data << [
         "Version",
@@ -119,10 +159,8 @@ class SignupFunnelAnalyzeJob < AnalyzeJob
 
         need_mark = true
         fps = ["frontporch", "signup_start", "email", "step1", "card", "conversion"]
-        puts key
 	fps.each do |fp|
           need_mark = false if state_counter[fp] < 10
-          puts need_mark
         end
         next unless need_mark
        

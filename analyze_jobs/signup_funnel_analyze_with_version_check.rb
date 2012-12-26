@@ -126,7 +126,7 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
       #return
     end
     
-    
+=begin
     if mark_target
       @version_output.puts session[0]["sitesessionid"]
       if mark_inconsistency
@@ -135,6 +135,7 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
         #puts "version: #{version} " + session[0]["sitesessionid"]
       end
     end
+=end
 
     unless mark_landing
       return
@@ -161,15 +162,15 @@ class SignupFunnelWithVersionCheckAnalyzeJob < AnalyzeJob
     #  @old_visitors_conversion[version] ||= 0
     #  puts "#{version} ## #{count} ## #{@old_visitors_conversion[version]}"
     #end
-    puts "##########################"
+    puts "###########new users###############"
     @new_users.each do |version, uidset|
       puts "#{version} ## #{uidset.length} }"
     end
-    puts "##########################"
+    puts "###########return users###############"
     @return_users.each do |version, count|
       puts "#{version} ## #{count} }"
     end
-    puts "##########################"
+    puts "###########inconsistency sessions###############"
     @inconsistency_sessions.each do |version, count|
       unless @states_counter[version].nil?
         puts "#{version} ## #{count} ## #{count * 1.0 / @states_counter[version]["frontporch"]}"

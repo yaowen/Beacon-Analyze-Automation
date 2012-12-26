@@ -3,7 +3,7 @@ class SetCountConversionJob < AnalyzeJob
   
   def initialize
     super
-    @version = "origin"
+    @version = "201208144"
     @visit_count = 0
     @conversion_count = 0
     @visit_or_conversion_count = 0
