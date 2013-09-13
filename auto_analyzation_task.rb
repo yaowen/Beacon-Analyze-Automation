@@ -48,6 +48,8 @@ end
 
 $start_date_str = $cmd_params["startdate"] || (DateTime.now - 2).strftime("%Y-%m-%d")
 $end_date_str = $cmd_params["enddate"] || $start_date_str
+$region = $cmd_params["region"] || "jp"
+STORE_PATH = File.join(STORE_PATH, $region)
 fetchdata = $cmd_params["fetchdata"] || "true"
 analyzedata = $cmd_params["analyzedata"] || "true"
 
@@ -81,7 +83,7 @@ def fetch_data
 
   #init job_config class
   job_config = JobConfig.new
-  job_config.load("./job.yml")
+  job_config.load("./job_#{$region}.yml")
 
   def parse_jobids jobid_str
     m_jobids = jobid_str.split("#")
@@ -137,7 +139,7 @@ def fetch_data
   end
   #translate beacon into json and aggregate according to session
 
-  system_with_command_print("#{RUBY_CMD} beacon_divider.rb input=#{raw_beacon_root_directory}/#{date_str} output=#{json_root_directory}")
+  system_with_command_print("#{RUBY_CMD} beacon_divider.rb region=#{$region} input=#{raw_beacon_root_directory}/#{date_str} output=#{json_root_directory}")
 end
 
 def gen_start_time start_date_str

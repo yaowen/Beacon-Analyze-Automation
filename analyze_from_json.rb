@@ -8,11 +8,15 @@ require './analyze_jobs/os_analyze'
 require './analyze_jobs/video_watch_analyze'
 require './analyze_jobs/video_watch_regular_analyze'
 require './analyze_jobs/signup_funnel_analyze'
+require './analyze_jobs/signup_funnel_analyze_whole'
+require './analyze_jobs/signup_funnel_analyze_us_mobile'
 require './analyze_jobs/landing_normal_state_analyze'
 require './analyze_jobs/conversion_on_landing'
 require './analyze_jobs/preview_watch_analyze'
+require './analyze_jobs/preview_watch_analyze_whole'
 require './analyze_jobs/signup_funnel_analyze_with_version_check'
 require './analyze_jobs/viewed_page_analyze'
+require './analyze_jobs/viewed_page_analyze_whole'
 
 require './specific_jobs/preview_watch_analyze'
 require './specific_jobs/free_episode_and_walkthrough_viewed'
@@ -22,6 +26,7 @@ require './specific_jobs/landing_fp_view_count'
 require './specific_jobs/list_all_visitors'
 require './specific_jobs/use_set_count_conversions'
 require './specific_jobs/signup_funnel_analyze_for_signup'
+require './specific_jobs/signup_funnel_analyze_backy'
 require './specific_jobs/stay_duration_on_page'
 
 require './filters/action/time_filter'
@@ -75,9 +80,14 @@ $job_queue = [
   #VideoWatchAnalyzeJob.new
   #VideoWatchRegularAnalyzeJob.new
   #PreviewWatchAnalyzeJob.new,
+  #PreviewWatchWholeAnalyzeJob.new
   #ViewedPageCountAnalyzeJob.new,
+  #ViewedPageCountWholeAnalyzeJob.new
   #SignupFunnelAnalyzeJob.new
+  #SignupFunnelWholeAnalyzeJob.new    #consider the guid for the whole period
+  SignupFunnelUsMobileAnalyzeJob.new 
   #LandingNormalStateAnalyzeJob.new
+  #SignupFunnelCampaignAnalyzeJob.new
   #ConversionOnLandingCountAnalyzeJob.new
   #PreviewWatchSpecificAnalyzeJob.new
   #PageViewSpecificCountAnalyzeJob.new
@@ -88,7 +98,7 @@ $job_queue = [
   #EasyGoalCount.new
   #SetCountConversionJob.new
   #SignupFunnelAnalyzeJobForSignup.new
-  StayDurationOnPage.new
+  #StayDurationOnPage.new
 ]
 
 #==> report list
@@ -165,7 +175,7 @@ MAX_INTERVAL.times do |i|
   start_date = DateTime.parse(start_date_str)
   end_date = DateTime.parse(end_date_str)
   cur_date = start_date + i
-  if((cur_date - end_date) > 1)
+  if((cur_date - end_date) > 0)
     break
   end
   cur_date_str = cur_date.strftime("%Y%m%d")

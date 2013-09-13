@@ -42,7 +42,7 @@
       input_file_types: "playback"
       job_type: "play_action"
 
-    - page_regex: ".*sitetracking/signupevent\\?.*userid=0.*"
+    - page_regex: ".*sitetracking/signupevent\\?.*"
       job_title: "site japan signup event"
       input_file_types: "sitetracking"
       job_type: "signup_action"

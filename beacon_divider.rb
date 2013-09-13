@@ -75,7 +75,7 @@ end
 
 def divide_beacon_file input_path
   job_config = JobConfig.new
-  job_config.load('./job.yml')
+  job_config.load("./job_#{$cmd_params["region"]}.yml")
   beacon_file = File.open(input_path, 'r')
   flag = false
   inputLineCount ||= 0
@@ -126,7 +126,7 @@ end
 
 def aggregate_json_file input_path
   job_config = JobConfig.new
-  job_config.load('./job.yml')
+  job_config.load("./job_#{$cmd_params["region"]}.yml")
   json_mid_file = File.open(input_path, 'r')
   inputLineCount ||= 0
   sessions = {}
@@ -138,6 +138,9 @@ def aggregate_json_file input_path
       print (inputLineCount.to_s + "\r")
     end
     user_action = JSON.parse(line)
+    if user_action["client"] =~ /3ds/
+      next
+    end
     add_element_to_hash_set sessions, user_action["sitesessionid"], user_action
     add_element_to_hash_set visitors, user_action["computerguid"], user_action
   end

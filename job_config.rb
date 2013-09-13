@@ -45,7 +45,8 @@ class JobConfig
         :start_date => start_date,
         :end_date => end_date,
         :input_file_types => job_profile["input_file_types"],
-        :additional_fields => generate_fields(job_type)
+        :additional_fields => generate_fields(job_type),
+        :region => ($region == "jp" ? "2" : "1")
       )
     end
     return jobids

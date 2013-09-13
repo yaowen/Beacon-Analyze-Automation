@@ -1,6 +1,6 @@
 require './analyze_job'
 require 'date'
-class ViewedPageCountAnalyzeJob < AnalyzeJob
+class ViewedPageCountWholeAnalyzeJob < AnalyzeJob
   
   def initialize
     super
@@ -10,6 +10,8 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
     @result = ""
     @total_visitors = {}
     @used_to = {}
+    @user_version = {}
+    @ignore_uids = Set.new
     listing_sids_file = File.open("visitors.output", "r")
     @listing_sids = Set.new
     listing_sids_file.each_line do |line|
@@ -38,23 +40,30 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
     version = ""
     return if @listing_sids.include? session[0]["computerguid"]
     
+    computerguid = session[0]["computerguid"]
+    version = @user_version[computerguid]
+    mark_return_user = (version && version != "")
+    mark_landing = mark_landing || mark_return_user
     analyze session do |action|
+      return if action["os"].downcase.include?("android") || action["os"].downcase.include?("iphone") || action["os"].downcase.include?("ipad")
+      return if action["client"].downcase.include?("unknown version")
       if !mark_landing and action["_type"] == "page_load"
         if front_porch? action
           mark_landing = true
           version = extract_version action["pageurl"]
           abtest_id = action["abtestid"]
-          return unless abtest_id == "20130730" || action["pageurl"].include?("open.hulu.jp")
+          return unless abtest_id == "20130903" || action["pageurl"].include?("open.hulu.jp")
           version = extract_version action["pageurl"]
+          @user_version[computerguid] = version
           #puts action["pageurl"] if "origin" == version #&& action["pageurl"].include?("rdt")
-          return if action["os"].downcase.include?("android") || action["os"].downcase.include?("iphone")
-          return if action["client"].downcase.include?("unknown version")
         end
       end
       
       if action["_type"] == "page_load"
         if conversion? action
           mark_conversion = true
+        elsif other_front_porch?(action)
+          @ignore_uids.add computerguid
         else
           pageurl = action["pageurl"]
           pageurl = pageurl.split("?")[0]
@@ -64,6 +73,10 @@ class ViewedPageCountAnalyzeJob < AnalyzeJob
     end
 
     unless mark_landing
+      return
+    end
+   
+    if @ignore_uids.include? computerguid
       return
     end
 

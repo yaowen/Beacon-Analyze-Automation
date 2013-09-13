@@ -1,7 +1,7 @@
 require './analyze_job'
 require 'set'
 require 'net/http'
-class PreviewWatchAnalyzeJob < AnalyzeJob
+class PreviewWatchWholeAnalyzeJob < AnalyzeJob
   
   def initialize
     super
@@ -11,9 +11,12 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     @watch_conversions = Hash.new
     @watch_visitors = Hash.new
     @output_filename = "preview_watch"
+    @user_version = {}
+    @ignore_uids = Set.new
     @result = ""
     listing_sids_file = File.open("visitors.output", "r")
     @listing_sids = Set.new
+
     listing_sids_file.each_line do |line|
       @listing_sids << line.gsub("\n", "")
     end
@@ -35,7 +38,8 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
     conversion_complete = false
     
     mark_landing = false
-    return if @listing_sids.include? session[0]["computerguid"]
+    mark_return_user = false
+    #return if @listing_sids.include? session[0]["computerguid"]
     version = ""
     trailerids = [
 	"60248999",
@@ -54,19 +58,23 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
 	"60245143"
     ]
 
+    computerguid = session[0]["computerguid"]
+    version = @user_version[computerguid]
+    mark_return_user = (version && version != "")
+    mark_landing = mark_landing || mark_return_user
     analyze session do |action|
+      return if action["os"].downcase.include?("android") || action["os"].downcase.include?("iphone") || action["os"].downcase.include?("ipad")
+      return if action["client"].downcase.include?("unknown version")
       if !mark_landing && action["_type"] == "page_load"
         if front_porch? action
           mark_landing = true
           abtest_id = action["abtestid"]
-          return unless abtest_id == "20130730" || action["pageurl"].include?("open.hulu.jp")
+          return unless abtest_id == "20130903" || action["pageurl"].include?("open.hulu.jp")
           version = extract_version action["pageurl"]
-          return if action["os"].downcase.include?("android") || action["os"].downcase.include?("iphone")
-          return if action["client"].downcase.include?("unknown version")
+          @user_version[computerguid] = version
         end
       end
       if action["_type"] == "play_action"
-        puts action["contentid"]
         if trailerids.include?(action["contentid"])
           watched_video_set.add "Trailers"
         elsif action["packageid"] == "4" 
@@ -84,11 +92,17 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
       elsif action["_type"] == "page_load" 
         if conversion? action
           conversion_complete = true
+        elsif other_front_porch? action
+          @ignore_uids.add computerguid
         end
       end
     end
 
     unless mark_landing
+      return
+    end
+
+    if @ignore_uids.include? computerguid
       return
     end
     @watch_conversions[version] ||= {}
@@ -126,7 +140,7 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
       @watch_visitors.each do |version, watch_visitor_counter|
         @total_conversions[version] ||= 0
         next if @total_conversions[version] < 20
-        conversion_rate_total = @total_conversions[version] * 1.0 / @total_visitors[version]
+        conversion_rate_total = @total_conversions[version] * 100.0 / @total_visitors[version]
         csv_data << [
           "Total Conversion Rate",
           conversion_rate_total.to_s,
@@ -140,9 +154,9 @@ class PreviewWatchAnalyzeJob < AnalyzeJob
           @watch_conversions[version][content_id] ||= 0
           conversion = @watch_conversions[version][content_id] || 0
           next if conversion == 0
-          conversion_rate = conversion * 1.0 / watch_count
-          watch_rate = watch_count * 1.0 / @total_visitors[version]
-          improvement = conversion_rate * 1.0 / conversion_rate_total - 1
+          conversion_rate = conversion * 100.0 / watch_count
+          watch_rate = watch_count * 100.0 / @total_visitors[version]
+          improvement = (conversion_rate * 1.0 / conversion_rate_total - 1) * 100.0
              
           csv_data << [
             version,
